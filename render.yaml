@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: stockify-pro-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: TICK_MS
+        value: 1000
