@@ -745,6 +745,15 @@ svg {
   appearance: none;
 }
 
+/* The viewport is zoomable, so keep fields at 16px on small screens: iOS
+   Safari zooms the whole page when a focused field is smaller than that. */
+@media (max-width: 600px) {
+  .input,
+  .select {
+    font-size: 16px;
+  }
+}
+
 .input:focus,
 .select:focus {
   border-color: rgba(74, 222, 155, 0.55);
