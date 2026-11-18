@@ -12,6 +12,13 @@ if (container) {
   );
 }
 
+// Installable on iPhone via Safari → Share → Add to Home Screen (PWA shell).
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register(new URL("sw.js", document.baseURI).toString()).catch(() => null);
+  });
+}
+
 // Hand the screen over to the app once React has painted.
 requestAnimationFrame(() => {
   const boot = document.getElementById("boot");

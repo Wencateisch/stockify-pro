@@ -8,7 +8,14 @@ Every price is real NSE data. Every order is paper.
 
 - **Web:** https://wencateisch.github.io/stockify-pro/
 - **Android:** download the APK from [Releases](../../releases/latest)
-- **iOS:** open `app/ios/App/App.xcodeproj`, pick a signing team, run
+- **iOS, no Mac or App Store:** open the web link in **Safari** → Share → **Add to Home Screen**.
+  It installs full-screen with its own icon and an offline shell; live quotes, cameras-free paper
+  trading and the IST clock all work. This is the easiest way to use it on an iPhone today.
+- **iOS native build:** the Xcode project is in `app/ios/App/App.xcodeproj`. CI compiles a simulator
+  build and uploads it as an artifact. To install on a physical iPhone or ship via TestFlight you
+  need your own Apple Developer team/signing certificate — iOS does not allow sideloading an
+  unsigned IPA. With a team, open the project, set your bundle identifier and signing team, then
+  Product → Archive → Distribute App.
 
 ![The desk](docs/desk.png)
 

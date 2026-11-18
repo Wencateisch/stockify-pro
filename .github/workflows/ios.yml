@@ -46,6 +46,14 @@ jobs:
             -configuration Debug \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             build
+
+      - name: Upload simulator build (needs Xcode to run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: StockifyPro-iOS-simulator
+          path: app/ios/App/build/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: warn

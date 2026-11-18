@@ -24,6 +24,10 @@ export function SettingsScreen() {
   const setSettings = useApp((s) => s.setSettings);
   const liveQuotes = useApp((s) => s.liveQuotes);
   const liveProvider = useApp((s) => s.liveProvider);
+  const isIOS =
+    typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone =
+    typeof window !== "undefined" && (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
   const liveError = useApp((s) => s.liveError);
   const liveLoading = useApp((s) => s.liveLoading);
   const refreshLive = useApp((s) => s.refreshLive);
@@ -347,12 +351,31 @@ export function SettingsScreen() {
         </div>
       </div>
 
+      {isIOS && !isStandalone && (
+        <>
+          <div className="section-head"><div className="section-title"><span className="dot" /> Install on iPhone</div></div>
+          <div className="glass card">
+            <div className="row" style={{ gap: 10 }}>
+              <Icon name="download" size={18} style={{ color: "var(--green)" }} />
+              <div className="col grow" style={{ gap: 4 }}>
+                <span className="small strong">Add Stockify Pro to your Home Screen</span>
+                <span className="tiny muted" style={{ lineHeight: 1.55 }}>
+                  Open this page in <strong>Safari</strong>, tap the <strong>Share</strong> button (square with
+                  an arrow), then <strong>Add to Home Screen</strong>. It opens full-screen with its own
+                  icon, keeps the IST clock and live feed, and remembers your paper trades on the device.
+                </span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <div className="section-head"><div className="section-title"><span className="dot" /> About</div></div>
       <div className="glass card">
         <div className="row between">
           <div className="col" style={{ gap: 2 }}>
             <span className="small strong">Stockify Pro</span>
-            <span className="tiny muted">NSE day-trading desk · v1.0.0</span>
+            <span className="tiny muted">NSE day-trading desk · v1.0.7</span>
           </div>
           <a className="btn xs ghost" href="https://github.com/Wencateisch/stockify-pro" target="_blank" rel="noreferrer">
             <Icon name="external" size={13} /> GitHub

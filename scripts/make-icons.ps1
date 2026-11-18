@@ -166,4 +166,10 @@ if (Test-Path $ios) {
   Set-Content -Path "$ios\Contents.json" -Value $contents -Encoding UTF8
 }
 
+# PWA / Add-to-Home-Screen icons for the web build (also used on iPhone).
+$public = Join-Path $root "app\public"
+foreach ($p in @{ "icon-180.png" = 180; "icon-192.png" = 192; "icon-512.png" = 512 }.GetEnumerator()) {
+  Save-Icon (Join-Path $public $p.Key) $p.Value
+}
+
 Write-Host "Icons and splash screens written."

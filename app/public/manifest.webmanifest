@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Stockify Pro — Nifty 50 Day Trader",
+  "short_name": "Stockify Pro",
+  "description": "Live Nifty 50 desk, industry categories, scanners, replay and paper trading.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05070d",
+  "theme_color": "#05070d",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
