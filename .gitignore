@@ -6,6 +6,7 @@ node_modules/
 # Web build output
 app/dist/
 app/dev-dist/
+out/
 
 # Capacitor generated web assets (recreated by `npx cap sync`)
 app/android/app/src/main/assets/public/

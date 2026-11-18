@@ -211,6 +211,9 @@ export interface ClosedTrade {
   setup: string;
 }
 
+/** Which provider actually supplied the quotes in the last successful poll. */
+export type LiveProvider = "direct" | "server" | "published";
+
 export interface PriceAlert {
   id: string;
   symbol: string;

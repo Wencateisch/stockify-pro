@@ -93,6 +93,12 @@ Any breach blocks the order and says why. There is no "override" button.
   The desk and Category screens have a one-tap **Go live** button; once live, a seconds countdown
   and progress bar show exactly when the next poll is due, and returning to a sleeping tab or phone
   screen triggers an immediate catch-up refresh.
+- **If Moneycontrol is blocked on your network**, the app automatically falls back to a published
+  backup feed: `.github/workflows/live.yml` runs every 5 minutes, fetches Yahoo's public NSE quotes
+  with `scripts/publish-live.mjs` and publishes `live.json` to the `live-data` branch. The app reads
+  it from `raw.githubusercontent.com` (CORS-enabled), so live mode works on web, Android and iPhone
+  without any server of your own. Those prices are **exchange-delayed**, the file is a 5-minute
+  snapshot (not a tick stream), and its exact timestamp is shown in the UI.
 - **Your own server** is still supported (`backend/`), and is the only option if you want to add a
   provider of your choice. Point Settings → Live source at "My server" and set its URL.
 - Prices are exchange-delayed, and the equal-weight proxy is **not** the NIFTY 50 index. The desk

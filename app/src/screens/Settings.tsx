@@ -23,6 +23,7 @@ export function SettingsScreen() {
   const settings = useApp((s) => s.settings);
   const setSettings = useApp((s) => s.setSettings);
   const liveQuotes = useApp((s) => s.liveQuotes);
+  const liveProvider = useApp((s) => s.liveProvider);
   const liveError = useApp((s) => s.liveError);
   const liveLoading = useApp((s) => s.liveLoading);
   const refreshLive = useApp((s) => s.refreshLive);
@@ -243,17 +244,25 @@ export function SettingsScreen() {
                 {liveLoading ? <><span className="spinner" /> Testing</> : <><Icon name="wifi" size={15} /> Test connection</>}
               </button>
               <span className={`pill ${liveError ? "red" : Object.keys(liveQuotes).length ? "green" : ""}`}>
-                {liveError ? "error" : `${Object.keys(liveQuotes).length} quotes`}
+                {liveError ? "error" : `${Object.keys(liveQuotes).length} quotes${liveProvider === "published" ? " · backup" : ""}`}
               </span>
             </div>
             {liveError && <div className="tiny down" style={{ marginTop: 8 }}>{liveError}</div>}
             {!liveError && Object.keys(liveQuotes).length > 0 && (
-              <div className="tiny muted" style={{ marginTop: 8 }}>
-                <IstStamp
-                  ts={Math.max(0, ...Object.values(liveQuotes).map((q) => q.asOf || 0))}
-                  label="Last tick"
-                />
-              </div>
+              <>
+                <div className="tiny muted" style={{ marginTop: 8 }}>
+                  <IstStamp
+                    ts={Math.max(0, ...Object.values(liveQuotes).map((q) => q.asOf || 0))}
+                    label="Last tick"
+                  />
+                </div>
+                {liveProvider === "published" && (
+                  <div className="tiny muted" style={{ marginTop: 4 }}>
+                    Backup feed: exchange-delayed Yahoo NSE quotes published by GitHub Actions every
+                    5 minutes. The direct NSE feed was unreachable from this device/network.
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

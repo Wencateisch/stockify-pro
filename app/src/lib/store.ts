@@ -7,10 +7,12 @@ import type {
   PriceAlert,
   Rules,
   Settings,
+  LiveProvider,
 } from "./types";
 import type { LiveQuote } from "./data";
 import { loadMarket, fetchLiveQuotes } from "./data";
 import { fetchMcQuotes, MC_IDS } from "./mc";
+import { fetchPublishedQuotes } from "./published";
 import { istDateStr, istTs } from "./time";
 
 export interface Toast {
@@ -76,6 +78,8 @@ interface AppState {
   liveLoading: boolean;
   /** Local time of the last completed poll, used for the "next update in" timer. */
   lastLiveRefreshAt: number;
+  /** Which feed supplied the last successful poll (direct, own server, backup). */
+  liveProvider: LiveProvider;
   refreshLive: () => Promise<void>;
   /** One tap from any screen: leave replay, switch to live, fetch the quotes. */
   goLive: () => Promise<void>;
@@ -146,22 +150,37 @@ export const useApp = create<AppState>()(
       liveError: null,
       liveLoading: false,
       lastLiveRefreshAt: 0,
+      liveProvider: "direct",
       refreshLive: async () => {
         const { settings, liveLoading } = get();
         if (liveLoading) return;
         set({ liveLoading: true });
+        let quotes: LiveQuote[] = [];
+        let provider: LiveProvider = settings.liveSource === "server" ? "server" : "direct";
+        let primaryError = "";
         try {
-          const quotes =
+          quotes =
             settings.liveSource === "server"
               ? await fetchLiveQuotes(settings.serverUrl)
               : await fetchMcQuotes(Object.keys(MC_IDS));
           if (!quotes.length) {
             throw new Error(
               settings.liveSource === "server"
-                ? "The server returned no usable quotes."
-                : "The direct feed returned no usable quotes. Check the connection and try again.",
+                ? "Your server returned no usable quotes."
+                : "Moneycontrol did not return any usable quotes (network blocked or rate-limited).",
             );
           }
+        } catch (err) {
+          primaryError = err instanceof Error ? err.message : String(err);
+          try {
+            quotes = await fetchPublishedQuotes();
+            provider = "published";
+          } catch (fallbackErr) {
+            const detail = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+            throw new Error(`${primaryError} Published backup feed: ${detail}`);
+          }
+        }
+        try {
           const fresh: Record<string, LiveQuote> = {};
           for (const q of quotes) fresh[q.symbol.toUpperCase()] = { ...q, symbol: q.symbol.toUpperCase() };
           const stamps = quotes.map((q) => q.asOf || 0).filter((x) => x > 0);
@@ -196,6 +215,7 @@ export const useApp = create<AppState>()(
               liveError: null,
               liveLoading: false,
               lastLiveRefreshAt: Date.now(),
+              liveProvider: provider,
             };
           });
         } catch (err) {

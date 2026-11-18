@@ -126,11 +126,14 @@ function parseFlatBy(value: string): number {
 export function useLiveAutoRefresh() {
   const mode = useApp((s) => s.settings.mode);
   const source = useApp((s) => s.settings.liveSource);
+  const provider = useApp((s) => s.liveProvider);
   const refresh = useApp((s) => s.refreshLive);
   useEffect(() => {
     if (mode !== "live") return;
     void refresh();
-    const id = window.setInterval(() => void refresh(), 30_000);
+    // The backup feed is republished every 5 minutes, so a 60s check is plenty.
+    const pollMs = provider === "published" ? 60_000 : 30_000;
+    const id = window.setInterval(() => void refresh(), pollMs);
     // Background tabs and phone screens suspend timers. On return, do not wait
     // for the next slot — refresh straight away if the last poll is stale.
     const catchUp = () => {
@@ -143,7 +146,7 @@ export function useLiveAutoRefresh() {
       document.removeEventListener("visibilitychange", catchUp);
       window.removeEventListener("focus", catchUp);
     };
-  }, [mode, source, refresh]);
+  }, [mode, source, provider, refresh]);
 }
 
 /** Fires paper alerts when the price actually crosses the armed level. */

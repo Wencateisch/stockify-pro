@@ -3,8 +3,6 @@ import { useNow } from "../lib/hooks";
 import { Icon } from "./Icons";
 import { IstStamp } from "./IstClock";
 
-const POLL_MS = 30_000;
-
 /** One tap from anywhere: leave replay, switch to live and pull the quotes. */
 export function GoLiveButton({ wide = false, label = "Go live" }: { wide?: boolean; label?: string }) {
   const goLive = useApp((s) => s.goLive);
@@ -37,11 +35,19 @@ export function LiveRefreshStatus({ bar = false }: { bar?: boolean }) {
   const lastAt = useApp((s) => s.lastLiveRefreshAt);
   const loading = useApp((s) => s.liveLoading);
   const error = useApp((s) => s.liveError);
+  const provider = useApp((s) => s.liveProvider);
   const refresh = useApp((s) => s.refreshLive);
   const now = useNow(1000);
 
-  const remaining = lastAt ? Math.min(30, Math.max(0, Math.ceil((lastAt + POLL_MS - now) / 1000))) : 0;
-  const progress = lastAt ? Math.min(100, Math.max(0, ((now - lastAt) / POLL_MS) * 100)) : 0;
+  const pollMs = provider === "published" ? 60_000 : 30_000;
+  const remaining = lastAt ? Math.min(pollMs / 1000, Math.max(0, Math.ceil((lastAt + pollMs - now) / 1000))) : 0;
+  const progress = lastAt ? Math.min(100, Math.max(0, ((now - lastAt) / pollMs) * 100)) : 0;
+  const providerLabel =
+    provider === "published"
+      ? "5-minute published feed"
+      : provider === "server"
+        ? "your server"
+        : "direct NSE feed";
 
   return (
     <div className="col" style={{ gap: 5 }}>
@@ -53,7 +59,7 @@ export function LiveRefreshStatus({ bar = false }: { bar?: boolean }) {
               ? `Updated `
               : "Connecting to the public NSE feed…"}
           {!loading && lastAt && <IstStamp ts={lastAt} label="" timeOnly />}
-          {!loading && lastAt && ` · next in ${remaining}s`}
+          {!loading && lastAt && ` · next in ${remaining}s · ${providerLabel}`}
         </span>
         <button
           type="button"

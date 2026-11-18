@@ -1,0 +1,36 @@
+name: Publish live quotes
+
+on:
+  schedule:
+    # GitHub cron is UTC. Every 5 minutes; quotes carry their own exact IST timestamp.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-data
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch real NSE quotes and write live.json
+        run: node scripts/publish-live.mjs
+
+      - name: Publish to the live-data branch
+        run: |
+          git config user.name "stockify-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B live-data
+          git add -f out/live.json
+          git commit -m "Live quotes $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "No change"
+          git push -f origin live-data
