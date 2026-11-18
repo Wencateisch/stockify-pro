@@ -90,6 +90,9 @@ Any breach blocks the order and says why. There is no "override" button.
   the browser every 30 seconds. All 50 scrip ids are pinned in `app/src/lib/mc.ts`, and each one
   was verified against the feed's `NSEID` field so a bad key cannot show another company's quote.
   The feed sends `Access-Control-Allow-Origin: *`, so it also works on the static GitHub Pages build.
+  The desk and Category screens have a one-tap **Go live** button; once live, a seconds countdown
+  and progress bar show exactly when the next poll is due, and returning to a sleeping tab or phone
+  screen triggers an immediate catch-up refresh.
 - **Your own server** is still supported (`backend/`), and is the only option if you want to add a
   provider of your choice. Point Settings → Live source at "My server" and set its URL.
 - Prices are exchange-delayed, and the equal-weight proxy is **not** the NIFTY 50 index. The desk

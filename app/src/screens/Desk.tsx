@@ -10,6 +10,7 @@ import { OPEN_MIN, todayIst, istParts, minutesLabel, istClockStr } from "../lib/
 import { inr, pct, price as fmtPrice, shares } from "../lib/format";
 import { Icon } from "../components/Icons";
 import { IstStamp } from "../components/IstClock";
+import { GoLiveButton, LiveRefreshStatus } from "../components/LiveControls";
 import { SeriesChart, Sparkline } from "../components/Chart";
 import { SetupPills } from "../components/SetupPills";
 import { Empty, Loading, Stat } from "../components/UI";
@@ -27,9 +28,6 @@ export function DeskScreen() {
   const replay = useApp((s) => s.replay);
   const liveQuotes = useApp((s) => s.liveQuotes);
   const liveSeries = useApp((s) => s.liveSeries);
-  const liveLoading = useApp((s) => s.liveLoading);
-  const liveError = useApp((s) => s.liveError);
-  const refreshLive = useApp((s) => s.refreshLive);
   const watchlist = useApp((s) => s.watchlist);
   const positions = useApp((s) => s.positions);
   const closedTrades = useApp((s) => s.closedTrades);
@@ -270,24 +268,26 @@ export function DeskScreen() {
           </div>
           <span className={`pill ${clock.allowEntries ? "green" : "amber"}`}>{clock.allowEntries ? "Entry window" : "No entries"}</span>
         </div>
-        {settings.mode === "live" && (
+        {settings.mode === "live" ? (
           <div className="col" style={{ marginTop: 8, gap: 4 }}>
-            <div className="row between" style={{ gap: 8 }}>
-              <span className="tiny muted">
-                {liveOn
-                  ? `Live proxy from ${live?.count ?? 0} of ${market.symbols.length} quotes${liveClock ? ` · last tick ${liveClock} IST` : ""} · polls every 30 s.`
-                  : settings.liveSource === "direct"
-                    ? "Connecting to the public NSE feed…"
-                    : `Connecting to ${settings.serverUrl}…`}
-              </span>
-              <button type="button" className="link" onClick={() => void refreshLive()} disabled={liveLoading}>
-                {liveLoading ? "Refreshing…" : "Refresh now"}
-              </button>
-            </div>
-            {liveError && <span className="tiny down">{liveError}</span>}
+            <span className="tiny muted">
+              {liveOn
+                ? `Live proxy from ${live?.count ?? 0} of ${market.symbols.length} quotes${liveClock ? ` · last tick ${liveClock} IST` : ""}`
+                : settings.liveSource === "direct"
+                  ? "Connecting to the public NSE feed…"
+                  : `Connecting to ${settings.serverUrl}…`}
+            </span>
+            <LiveRefreshStatus bar />
             {liveOn && liveSeries.length < 2 && (
               <span className="tiny muted">The live line starts now — one point per poll, so it fills in within a minute.</span>
             )}
+          </div>
+        ) : (
+          <div className="row between" style={{ marginTop: 8, gap: 8 }}>
+            <span className="tiny muted">
+              Showing the bundled snapshot. Live NSE quotes are one tap away — no server needed.
+            </span>
+            <GoLiveButton />
           </div>
         )}
       </div>

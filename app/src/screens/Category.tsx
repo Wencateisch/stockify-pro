@@ -8,6 +8,7 @@ import { minutesLabel, istClockStr } from "../lib/time";
 import { pct, price as fmtPrice } from "../lib/format";
 import { Icon } from "../components/Icons";
 import { IstStamp } from "../components/IstClock";
+import { GoLiveButton, LiveRefreshStatus } from "../components/LiveControls";
 import { Sparkline } from "../components/Chart";
 import { Empty, Loading, Segmented } from "../components/UI";
 import type { Instrument } from "../lib/types";
@@ -285,6 +286,15 @@ export function CategoryScreen() {
           { value: "industry", label: "Industries" },
         ]}
       />
+
+      {!replay && mode !== "live" && (
+        <div className="glass flat card tight cat-live-cta">
+          <Icon name="wifi" size={17} style={{ color: "var(--green)" }} />
+          <span className="grow small">Live feed available — 50 NSE quotes, no server</span>
+          <GoLiveButton />
+        </div>
+      )}
+      {!replay && mode === "live" && <LiveRefreshStatus bar />}
 
       {strongest && weakest && (
         <div className="cat-leaders">

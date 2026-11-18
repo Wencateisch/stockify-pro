@@ -41,7 +41,7 @@ export function App() {
   const liveSource = useApp((s) => s.settings.liveSource);
   const serverUrl = useApp((s) => s.settings.serverUrl);
   const setSettings = useApp((s) => s.setSettings);
-  const refreshLive = useApp((s) => s.refreshLive);
+  const goLive = useApp((s) => s.goLive);
   const stopReplay = useApp((s) => s.stopReplay);
   const pushToast = useApp((s) => s.pushToast);
   const clock = useMarketClock();
@@ -70,7 +70,7 @@ export function App() {
     }
     const next = mode === "live" ? "snapshot" : "live";
     setSettings({ mode: next });
-    if (next === "live") void refreshLive();
+    if (next === "live") void goLive();
     pushToast(
       next === "live"
         ? `Live mode: ${liveSource === "direct" ? "the public NSE feed, refreshed every 30 seconds" : serverUrl}.`

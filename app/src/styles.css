@@ -280,6 +280,31 @@ svg {
   white-space: nowrap;
 }
 
+.refresh-bar {
+  height: 3px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.refresh-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  opacity: 0.75;
+  border-radius: 99px;
+  transition: width 0.9s linear;
+}
+
+.cat-live-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  color: var(--ink-2);
+}
+
 @media (max-width: 520px) {
   .topbar {
     gap: 8px;

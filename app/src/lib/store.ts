@@ -74,7 +74,11 @@ interface AppState {
   liveSeries: { t: number; value: number }[];
   liveError: string | null;
   liveLoading: boolean;
+  /** Local time of the last completed poll, used for the "next update in" timer. */
+  lastLiveRefreshAt: number;
   refreshLive: () => Promise<void>;
+  /** One tap from any screen: leave replay, switch to live, fetch the quotes. */
+  goLive: () => Promise<void>;
 
   rules: Rules;
   setRules: (patch: Partial<Rules>) => void;
@@ -141,6 +145,7 @@ export const useApp = create<AppState>()(
       liveSeries: [],
       liveError: null,
       liveLoading: false,
+      lastLiveRefreshAt: 0,
       refreshLive: async () => {
         const { settings, liveLoading } = get();
         if (liveLoading) return;
@@ -190,14 +195,24 @@ export const useApp = create<AppState>()(
               liveSeries: next.slice(-240),
               liveError: null,
               liveLoading: false,
+              lastLiveRefreshAt: Date.now(),
             };
           });
         } catch (err) {
           set({
             liveError: err instanceof Error ? err.message : String(err),
             liveLoading: false,
+            lastLiveRefreshAt: Date.now(),
           });
         }
+      },
+
+      goLive: async () => {
+        if (get().replay) get().stopReplay();
+        if (get().settings.mode !== "live") {
+          set((s) => ({ settings: { ...s.settings, mode: "live" } }));
+        }
+        await get().refreshLive();
       },
 
       rules: DEFAULT_RULES,

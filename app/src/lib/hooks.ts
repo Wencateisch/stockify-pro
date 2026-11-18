@@ -122,7 +122,7 @@ function parseFlatBy(value: string): number {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
-/** Polls the live feed while the mode is "live". The public feed allows 4s caching, so 30s is polite and keeps the desk ticking. */
+/** Polls the live feed every 30s, and catches up immediately when the tab/device wakes. */
 export function useLiveAutoRefresh() {
   const mode = useApp((s) => s.settings.mode);
   const source = useApp((s) => s.settings.liveSource);
@@ -131,7 +131,18 @@ export function useLiveAutoRefresh() {
     if (mode !== "live") return;
     void refresh();
     const id = window.setInterval(() => void refresh(), 30_000);
-    return () => window.clearInterval(id);
+    // Background tabs and phone screens suspend timers. On return, do not wait
+    // for the next slot — refresh straight away if the last poll is stale.
+    const catchUp = () => {
+      if (Date.now() - (useApp.getState().lastLiveRefreshAt || 0) >= 25_000) void refresh();
+    };
+    document.addEventListener("visibilitychange", catchUp);
+    window.addEventListener("focus", catchUp);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", catchUp);
+      window.removeEventListener("focus", catchUp);
+    };
   }, [mode, source, refresh]);
 }
 
