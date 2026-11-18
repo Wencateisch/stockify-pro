@@ -195,7 +195,7 @@ export function SettingsScreen() {
         />
         <p className="tiny muted" style={{ marginTop: 8, lineHeight: 1.5 }}>
           The snapshot is real Yahoo Finance NSE data bundled at build time. Live mode polls the same 50
-          NSE names from Moneycontrol&apos;s public feed every 15 seconds — no server, no key — or from a
+          NSE names from Moneycontrol&apos;s public feed every 30 seconds — no server, no key — or from a
           proxy you run yourself.
         </p>
 

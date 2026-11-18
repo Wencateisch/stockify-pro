@@ -16,9 +16,18 @@ Every price is real NSE data. Every order is paper.
 
 **1 · The desk** — an equal-weight Nifty 50 proxy charted from the real 5-minute tape, breadth
 (advances / declines / average move / traded value), the market clock in IST, and a live
-opening-range list.
+opening-range list. In live mode the hero switches to live quotes: the level, breadth and traded
+value recompute every 30 s and the line grows one point per poll.
 
-**2 · The scanner** — two tabs:
+**2 · The categories** — all 50 names in one consistent taxonomy: 13 sectors and 28 industries,
+hand-mapped so banks, NBFCs, the exchange and insurers no longer sit in a single "Financials"
+pile and the retailers are together. Switch between the sector and industry views, sort by
+biggest move or A–Z, search a stock, industry or sector, and read each group's equal-weight move,
+breadth bar and traded value. Every name is in exactly one industry, so nothing falls through.
+
+![Categories](docs/category.png)
+
+**3 · The scanner** — two tabs:
 
 | Tab | What it runs |
 | --- | --- |
@@ -30,12 +39,12 @@ which names have no complete opening range instead of guessing.
 
 ![Scanner](docs/scanner.png)
 
-**3 · The symbol desk** — price hero, intraday chart with the opening range and your entry
+**4 · The symbol desk** — price hero, intraday chart with the opening range and your entry
 drawn on it, the breakout that triggered, the five daily setups with the evidence behind them
 (RSI, MA20 distance, range multiple), the plan builder (entry / stop / target), the four sizing
 limits, the pre-trade risk gate, a paper order ticket, watchlist and alerts.
 
-**4 · The Time Machine** — 10,000 replay paths through the real 5-minute history, sampled around
+**5 · The Time Machine** — 10,000 replay paths through the real 5-minute history, sampled around
 the same time of day as your plan's entry bar. It reports how often the target came first, how
 often the stop did, and how often neither did before 15:15 — plus the median close and the
 5–95% price band. It warns when the plan's entry price never traded inside the replay bar's
@@ -43,7 +52,7 @@ high/low, rather than pretending the trade happened.
 
 ![Time Machine](docs/time-machine.png)
 
-**5 · Journal, alerts and settings** — paper positions marked to the snapshot / replay clock /
+**6 · Journal, alerts and settings** — paper positions marked to the snapshot / replay clock /
 live feed, automatic stop and target fills, closed-trade stats in R, price alerts that fire when the
 price **crosses** the armed level (checked every 2.5 s, and on the replay clock too), and editable
 rules (capital, per-trade and daily loss limits, position cap, order cap, trade count, entry window,
@@ -74,14 +83,14 @@ Any breach blocks the order and says why. There is no "override" button.
   date that is. Where Yahoo dropped a 5-minute print, the scanner reports the missing bars and
   uses the prints that exist — it never interpolates one.
 - **Live mode** needs no server: the app reads Moneycontrol's public NSE price feed directly in
-  the browser every 15 seconds. All 50 scrip ids are pinned in `app/src/lib/mc.ts`, and each one
+  the browser every 30 seconds. All 50 scrip ids are pinned in `app/src/lib/mc.ts`, and each one
   was verified against the feed's `NSEID` field so a bad key cannot show another company's quote.
   The feed sends `Access-Control-Allow-Origin: *`, so it also works on the static GitHub Pages build.
 - **Your own server** is still supported (`backend/`), and is the only option if you want to add a
   provider of your choice. Point Settings → Live source at "My server" and set its URL.
 - Prices are exchange-delayed, and the equal-weight proxy is **not** the NIFTY 50 index. The desk
-  chart is built from the last complete session; live quotes move the symbol, watchlist, journal
-  and alert prices, not the historical tape.
+  hero switches to a live equal-weight proxy (breadth, turnover and a line that extends one point
+  per poll) as soon as live quotes arrive; the historical tape is only used when live is off.
 - Nothing here connects to a broker. Fills, positions and P&L are paper and stay in
   `localStorage` on the device.
 
@@ -117,7 +126,7 @@ Icons and splash screens come from `scripts/make-icons.ps1` (Windows PowerShell 
 ### Live feed
 
 Live mode works with **no backend at all**: Settings → Live feed → "Direct NSE feed" polls
-Moneycontrol's public NSE endpoint every 15 seconds from the browser. If you would rather run your
+Moneycontrol's public NSE endpoint every 30 seconds from the browser. If you would rather run your
 own proxy (or add a provider), the bundled backend proxies Yahoo Finance instead:
 
 ```bash
@@ -144,8 +153,8 @@ Then set **Settings → Live source → My server** (use your LAN IP for a phone
 
 ```
 app/            React + TypeScript + Vite frontend (the app)
-  src/lib/      data, indicators, plan/sizing/risk, ORB, Time Machine engine, store
-  src/screens/  Desk, Scanner, Symbol, TimeMachine, Journal, Alerts, Settings
+  src/lib/      data, indicators, sector map, plan/sizing/risk, ORB, Time Machine engine, store
+  src/screens/  Desk, Category, Scanner, Symbol, TimeMachine, Journal, Alerts, Settings
   android/      Capacitor Android project (icons, splash, dark theme)
   ios/          Capacitor iOS project
   public/data/  bundled market.json + 50 history files

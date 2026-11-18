@@ -6,7 +6,7 @@ import { scanDaily, SETUP_LABELS } from "../lib/indicators";
 import { intradayProxy, tapeBreadth, sparkValues, initials, fmtDate, movers } from "../lib/market";
 import { priceOf } from "../lib/prices";
 import { navigate } from "../router";
-import { OPEN_MIN, todayIst } from "../lib/time";
+import { OPEN_MIN, todayIst, istParts, minutesLabel } from "../lib/time";
 import { inr, pct, price as fmtPrice, shares } from "../lib/format";
 import { Icon } from "../components/Icons";
 import { SeriesChart, Sparkline } from "../components/Chart";
@@ -25,6 +25,10 @@ export function DeskScreen() {
   const settings = useApp((s) => s.settings);
   const replay = useApp((s) => s.replay);
   const liveQuotes = useApp((s) => s.liveQuotes);
+  const liveSeries = useApp((s) => s.liveSeries);
+  const liveLoading = useApp((s) => s.liveLoading);
+  const liveError = useApp((s) => s.liveError);
+  const refreshLive = useApp((s) => s.refreshLive);
   const watchlist = useApp((s) => s.watchlist);
   const positions = useApp((s) => s.positions);
   const closedTrades = useApp((s) => s.closedTrades);
@@ -36,6 +40,31 @@ export function DeskScreen() {
 
   const proxy = useMemo(() => intradayProxy(market), [market]);
   const breadth = useMemo(() => tapeBreadth(market), [market]);
+  const live = useMemo(() => {
+    const qs = Object.values(liveQuotes).filter((q) => q.prevClose > 0 && q.price > 0);
+    if (!qs.length) return null;
+    let up = 0;
+    let down = 0;
+    let flat = 0;
+    let sum = 0;
+    let turnover = 0;
+    let asOf = 0;
+    for (const q of qs) {
+      const r = q.price / q.prevClose - 1;
+      if (r > 0.0002) up++;
+      else if (r < -0.0002) down++;
+      else flat++;
+      sum += r;
+      turnover += q.price * (q.volume || 0);
+      asOf = Math.max(asOf, q.asOf || 0);
+    }
+    const avg = sum / qs.length;
+    return { up, down, flat, avgPct: avg * 100, turnover, count: qs.length, asOf, level: 10_000 * (1 + avg) };
+  }, [liveQuotes]);
+  const liveOn = settings.mode === "live" && !replay && !!live && live.count >= 10;
+  const shown = liveOn && live ? live : breadth;
+  const shownLevel = liveOn && live ? live.level : proxy.level;
+  const shownPct = liveOn && live ? live.avgPct : proxy.lastPct;
   const orb = useMemo(
     () => (market ? scanOrb(market.symbols, OR_MINUTES, 15 * 60 + 30) : null),
     [market],
@@ -94,22 +123,42 @@ export function DeskScreen() {
     );
   }
 
-  const proxyUp = proxy.lastPct >= 0;
-  const heroColor = proxyUp ? "var(--green)" : "var(--red)";
-  const points = proxy.points.map((p) => ({
-    x: p.minutes,
-    y: p.pct,
-    tip: `${String(Math.floor(p.minutes / 60)).padStart(2, "0")}:${String(p.minutes % 60).padStart(2, "0")} · ${pct(p.pct)}`,
-  }));
-  const xTicks = proxy.points.length
-    ? [0, Math.floor((proxy.points.length - 1) / 2), proxy.points.length - 1].map((idx) => {
-        const m = proxy.points[idx].minutes;
-        return { x: m, label: `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}` };
+  const heroUp = shownPct >= 0;
+  const heroColor = heroUp ? "var(--green)" : "var(--red)";
+  const livePoints = liveSeries.map((pt) => {
+    const parts = istParts(pt.t);
+    const move = (pt.value / 10_000 - 1) * 100;
+    return {
+      x: parts.minutes,
+      y: move,
+      tip: `${minutesLabel(parts.minutes)} · ${pct(move)}`,
+    };
+  });
+  const points = liveOn
+    ? livePoints
+    : proxy.points.map((p) => ({
+        x: p.minutes,
+        y: p.pct,
+        tip: `${String(Math.floor(p.minutes / 60)).padStart(2, "0")}:${String(p.minutes % 60).padStart(2, "0")} · ${pct(p.pct)}`,
+      }));
+  const tickSource = liveOn ? livePoints : proxy.points.map((p) => ({ x: p.minutes }));
+  const xTicks = tickSource.length
+    ? [...new Set([0, Math.floor((tickSource.length - 1) / 2), tickSource.length - 1])].map((idx) => {
+        const m = tickSource[idx].x;
+        return { x: m, label: minutesLabel(m) };
       })
     : [];
+  const liveClock = live?.asOf
+    ? new Date(live.asOf).toLocaleTimeString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : "";
 
   const topHit = orb?.hits[0];
-  const breadthPct = (breadth.up / Math.max(1, breadth.count)) * 100;
+  const breadthPct = (shown.up / Math.max(1, shown.count)) * 100;
   const tapeLabel = proxy.date
     ? new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(
         new Date(proxy.date + "T12:00:00+05:30"),
@@ -143,20 +192,24 @@ export function DeskScreen() {
         <div className="hero-top">
           <div className="grow">
             <div className="hero-label">
-              Nifty 50 · equal-weight proxy{tapeLabel ? ` · ${tapeLabel}` : ""}
+              {liveOn
+                ? `Nifty 50 · equal-weight proxy · live${liveClock ? ` · ${liveClock} IST` : ""}`
+                : `Nifty 50 · equal-weight proxy${tapeLabel ? ` · ${tapeLabel}` : ""}`}
             </div>
-            <div className="hero-price">{proxy.level.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div className="hero-price">{shownLevel.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <div className="hero-delta" style={{ color: heroColor }}>
               <span>
-                {pct(proxy.lastPct)}
+                {pct(shownPct)}
               </span>
               <span className="tiny muted">
-                vs prev close · {breadth.up} up / {breadth.down} down
+                vs prev close · {shown.up} up / {shown.down} down
               </span>
             </div>
           </div>
           <div className="col" style={{ alignItems: "flex-end", gap: 6 }}>
-            <span className="pill">Last complete session</span>
+            <span className={`pill ${liveOn ? "green" : ""}`}>
+              {liveOn ? `Live · ${live?.count ?? 0} quotes` : "Last complete session"}
+            </span>
             <span className="pill blue">base = 10,000</span>
           </div>
         </div>
@@ -176,16 +229,16 @@ export function DeskScreen() {
         <div className="metrics">
           <div>
             <div className="metric-k">Advances</div>
-            <div className="metric-v up">{breadth.up}</div>
+            <div className="metric-v up">{shown.up}</div>
           </div>
           <div>
             <div className="metric-k">Declines</div>
-            <div className="metric-v down">{breadth.down}</div>
+            <div className="metric-v down">{shown.down}</div>
           </div>
           <div>
             <div className="metric-k">Avg move</div>
-            <div className="metric-v" style={{ color: breadth.avgPct >= 0 ? "var(--green)" : "var(--red)" }}>
-              {pct(breadth.avgPct)}
+            <div className="metric-v" style={{ color: shown.avgPct >= 0 ? "var(--green)" : "var(--red)" }}>
+              {pct(shown.avgPct)}
             </div>
           </div>
         </div>
@@ -194,9 +247,9 @@ export function DeskScreen() {
           <i style={{ width: `${Math.max(2, Math.min(100, breadthPct))}%` }} />
         </div>
         <div className="row between" style={{ marginTop: 6 }}>
-          <span className="tiny muted">{breadth.flat} unchanged</span>
+          <span className="tiny muted">{shown.flat} unchanged</span>
           <span className="tiny muted">
-            Turnover ≈ ₹{(breadth.turnover / 1e7).toLocaleString("en-IN", { maximumFractionDigits: 0 })} Cr
+            Turnover ≈ ₹{(shown.turnover / 1e7).toLocaleString("en-IN", { maximumFractionDigits: 0 })} Cr
           </span>
         </div>
       </section>
@@ -224,10 +277,23 @@ export function DeskScreen() {
           <span className={`pill ${clock.allowEntries ? "green" : "amber"}`}>{clock.allowEntries ? "Entry window" : "No entries"}</span>
         </div>
         {settings.mode === "live" && (
-          <div className="tiny muted" style={{ marginTop: 8 }}>
-            Live mode is on. {settings.liveSource === "direct"
-              ? "All 50 quotes poll every 15 seconds from the public NSE feed."
-              : `All 50 quotes poll every 30 seconds from ${settings.serverUrl}.`}
+          <div className="col" style={{ marginTop: 8, gap: 4 }}>
+            <div className="row between" style={{ gap: 8 }}>
+              <span className="tiny muted">
+                {liveOn
+                  ? `Live proxy from ${live?.count ?? 0} of ${market.symbols.length} quotes${liveClock ? ` · last tick ${liveClock} IST` : ""} · polls every 30 s.`
+                  : settings.liveSource === "direct"
+                    ? "Connecting to the public NSE feed…"
+                    : `Connecting to ${settings.serverUrl}…`}
+              </span>
+              <button type="button" className="link" onClick={() => void refreshLive()} disabled={liveLoading}>
+                {liveLoading ? "Refreshing…" : "Refresh now"}
+              </button>
+            </div>
+            {liveError && <span className="tiny down">{liveError}</span>}
+            {liveOn && liveSeries.length < 2 && (
+              <span className="tiny muted">The live line starts now — one point per poll, so it fills in within a minute.</span>
+            )}
           </div>
         )}
       </div>

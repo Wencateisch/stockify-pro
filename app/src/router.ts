@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export type Route =
   | { name: "desk" }
+  | { name: "category" }
   | { name: "scan" }
   | { name: "symbol"; symbol: string }
   | { name: "tm"; symbol: string }
@@ -28,6 +29,7 @@ export function parseRoute(path: string): Route {
   if (!parts.length) return { name: "desk" };
   const [head, tail] = parts;
   if (head === "scan") return { name: "scan" };
+  if (head === "category" || head === "categories") return { name: "category" };
   if (head === "journal") return { name: "journal" };
   if (head === "alerts") return { name: "alerts" };
   if (head === "settings") return { name: "settings" };

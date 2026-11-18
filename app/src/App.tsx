@@ -9,6 +9,7 @@ import {
   useReplayEngine,
 } from "./lib/hooks";
 import { DeskScreen } from "./screens/Desk";
+import { CategoryScreen } from "./screens/Category";
 import { ScannerScreen } from "./screens/Scanner";
 import { SymbolScreen } from "./screens/Symbol";
 import { TimeMachineScreen } from "./screens/TimeMachine";
@@ -71,7 +72,7 @@ export function App() {
     if (next === "live") void refreshLive();
     pushToast(
       next === "live"
-        ? `Live mode: ${liveSource === "direct" ? "the public NSE feed, refreshed every 15 seconds" : serverUrl}.`
+        ? `Live mode: ${liveSource === "direct" ? "the public NSE feed, refreshed every 30 seconds" : serverUrl}.`
         : "Snapshot mode: the bundled real NSE data.",
       "info",
     );
@@ -134,6 +135,7 @@ export function App() {
       >
         <ErrorBoundary>
           {route.name === "desk" && <DeskScreen />}
+          {route.name === "category" && <CategoryScreen />}
           {route.name === "scan" && <ScannerScreen />}
           {route.name === "symbol" && <SymbolScreen key={route.symbol} symbol={route.symbol} />}
           {route.name === "tm" && <TimeMachineScreen key={route.symbol} symbol={route.symbol} />}

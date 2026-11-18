@@ -30,6 +30,13 @@ export function AlertsScreen() {
     typeof Notification !== "undefined" ? Notification.permission : "unsupported",
   );
 
+  useEffect(() => {
+    const sync = () =>
+      setPermission(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
+    window.addEventListener("focus", sync);
+    return () => window.removeEventListener("focus", sync);
+  }, []);
+
   const inst = useMemo(
     () => market?.symbols.find((s) => s.symbol === symbol) || null,
     [market, symbol],
@@ -73,18 +80,74 @@ export function AlertsScreen() {
     pushToast(`Alert armed: ${inst.symbol} crosses ${dir === "above" ? "above" : "below"} ₹${fmtPrice(priceText)}.`, "info");
   };
 
+  const nativeShell =
+    typeof window !== "undefined" &&
+    typeof (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+      ?.isNativePlatform === "function" &&
+    !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+
+  const notifTitle =
+    permission === "granted"
+      ? "System notifications on"
+      : permission === "denied"
+        ? "System notifications blocked"
+        : permission === "unsupported"
+          ? "System notifications unavailable"
+          : "System notifications off";
+
+  const notifBody =
+    permission === "granted"
+      ? "A banner joins the in-app toast while the app is open."
+      : permission === "denied"
+        ? nativeShell
+          ? "The app runs inside an Android WebView, which has no browser notification prompt. In-app toasts, the chime and vibration still work."
+          : "This site is blocked in your browser. Open the padlock / site controls next to the address, set Notifications to Allow, then check again — the prompt will not appear a second time."
+        : permission === "unsupported"
+          ? "This browser has no Notification API. On iPhone, add the app to the Home Screen first (iOS 16.4+). In-app toasts and the chime still work."
+          : "The in-app toast and chime always work. A system banner needs permission.";
+
   const askPermission = async () => {
     if (typeof Notification === "undefined") {
-      pushToast("This browser has no notification support. In-app toasts and the chime still work.", "amber");
+      pushToast("This browser has no notification API. In-app toasts and the chime still work.", "amber");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setPermission("denied");
+      pushToast(
+        nativeShell
+          ? "The Android WebView cannot show browser notifications. Toasts, chime and vibration still work."
+          : "Blocked in the browser. Use the padlock / site controls → Notifications → Allow, then tap Check again.",
+        "amber",
+      );
       return;
     }
     try {
       const result = await Notification.requestPermission();
       setPermission(result);
-      pushToast(result === "granted" ? "System notifications allowed." : "System notifications were not allowed.", result === "granted" ? "green" : "amber");
+      pushToast(
+        result === "granted"
+          ? "System notifications allowed."
+          : result === "denied"
+            ? "The browser denied the prompt. Allow this site in its notification settings, then check again."
+            : "The prompt was dismissed. In-app toasts and the chime still work.",
+        result === "granted" ? "green" : "amber",
+      );
     } catch {
-      pushToast("The browser refused the notification prompt.", "amber");
+      pushToast("The browser refused the notification prompt. In-app toasts and the chime still work.", "amber");
     }
+  };
+
+  const recheckPermission = () => {
+    const next = typeof Notification !== "undefined" ? Notification.permission : "unsupported";
+    setPermission(next);
+    pushToast(
+      next === "granted"
+        ? "System notifications are allowed now."
+        : next === "denied"
+          ? "Still blocked. Change it in the browser's site settings, then check again."
+          : "The browser has not granted notifications yet.",
+      next === "granted" ? "green" : "amber",
+    );
   };
 
   const testAlert = () => {
@@ -241,15 +304,16 @@ export function AlertsScreen() {
           </span>
           <div className="col grow" style={{ gap: 2 }}>
             <span className="small strong">
-              System notifications {permission === "granted" ? "on" : permission === "unsupported" ? "unavailable" : "off"}
+              {notifTitle}
             </span>
             <span className="tiny muted">
-              {permission === "granted"
-                ? "A banner joins the in-app toast while the app is open."
-                : "The in-app toast and chime always work. A system banner needs permission."}
+              {notifBody}
             </span>
           </div>
-          {permission !== "granted" && permission !== "unsupported" && (
+          {permission === "denied" && !nativeShell && (
+            <button type="button" className="btn xs ghost" onClick={recheckPermission}>Check again</button>
+          )}
+          {permission !== "granted" && permission !== "unsupported" && permission !== "denied" && (
             <button type="button" className="btn xs ghost" onClick={() => void askPermission()}>Allow</button>
           )}
         </div>

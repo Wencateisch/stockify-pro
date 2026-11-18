@@ -4,6 +4,7 @@ import { useApp } from "../lib/store";
 
 const ITEMS: { path: string; label: string; icon: IconName; match: string[] }[] = [
   { path: "/", label: "Desk", icon: "desk", match: ["desk"] },
+  { path: "/category", label: "Category", icon: "layers", match: ["category"] },
   { path: "/scan", label: "Scan", icon: "radar", match: ["scan", "symbol", "tm"] },
   { path: "/journal", label: "Journal", icon: "journal", match: ["journal"] },
   { path: "/alerts", label: "Alerts", icon: "bell", match: ["alerts"] },

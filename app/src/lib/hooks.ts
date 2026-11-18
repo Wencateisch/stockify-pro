@@ -122,7 +122,7 @@ function parseFlatBy(value: string): number {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
-/** Polls the live feed while the mode is "live". Direct feed every 15s, own server every 30s. */
+/** Polls the live feed while the mode is "live". The public feed allows 4s caching, so 30s is polite and keeps the desk ticking. */
 export function useLiveAutoRefresh() {
   const mode = useApp((s) => s.settings.mode);
   const source = useApp((s) => s.settings.liveSource);
@@ -130,7 +130,7 @@ export function useLiveAutoRefresh() {
   useEffect(() => {
     if (mode !== "live") return;
     void refresh();
-    const id = window.setInterval(() => void refresh(), source === "direct" ? 15_000 : 30_000);
+    const id = window.setInterval(() => void refresh(), 30_000);
     return () => window.clearInterval(id);
   }, [mode, source, refresh]);
 }

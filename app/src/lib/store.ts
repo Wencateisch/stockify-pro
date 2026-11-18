@@ -71,6 +71,7 @@ interface AppState {
   loadMarketData: () => Promise<void>;
 
   liveQuotes: Record<string, LiveQuote>;
+  liveSeries: { t: number; value: number }[];
   liveError: string | null;
   liveLoading: boolean;
   refreshLive: () => Promise<void>;
@@ -137,6 +138,7 @@ export const useApp = create<AppState>()(
       },
 
       liveQuotes: {},
+      liveSeries: [],
       liveError: null,
       liveLoading: false,
       refreshLive: async () => {
@@ -155,9 +157,41 @@ export const useApp = create<AppState>()(
                 : "The direct feed returned no usable quotes. Check the connection and try again.",
             );
           }
-          const map: Record<string, LiveQuote> = {};
-          for (const q of quotes) map[q.symbol.toUpperCase()] = { ...q, symbol: q.symbol.toUpperCase() };
-          set({ liveQuotes: map, liveError: null, liveLoading: false });
+          const fresh: Record<string, LiveQuote> = {};
+          for (const q of quotes) fresh[q.symbol.toUpperCase()] = { ...q, symbol: q.symbol.toUpperCase() };
+          const stamps = quotes.map((q) => q.asOf || 0).filter((x) => x > 0);
+          const t = stamps.length ? Math.max(...stamps) : Date.now();
+          const wanted = settings.liveSource === "direct" ? Object.keys(MC_IDS) : null;
+          set((s) => {
+            // A slow or rate-limited symbol must not erase the last good quote, or the
+            // equal-weight level would jump every time one request times out.
+            const map: Record<string, LiveQuote> = { ...s.liveQuotes, ...fresh };
+            for (const sym of Object.keys(map)) {
+              const q = map[sym];
+              if (!q || !(q.price > 0) || !(q.prevClose > 0)) delete map[sym];
+            }
+            const pool = (wanted ? wanted.map((k) => map[k]) : Object.values(map)).filter(
+              (q): q is LiveQuote => !!q && q.prevClose > 0 && q.price > 0,
+            );
+            const ratio = pool.length
+              ? pool.reduce((a, q) => a + q.price / q.prevClose, 0) / pool.length
+              : 1;
+            let series = s.liveSeries;
+            const last = series[series.length - 1];
+            if (last && istDateStr(last.t) !== istDateStr(t)) series = [];
+            const next = series.slice();
+            if (next.length && t - next[next.length - 1].t < 4_000) {
+              next[next.length - 1] = { t, value: ratio * 10_000 };
+            } else {
+              next.push({ t, value: ratio * 10_000 });
+            }
+            return {
+              liveQuotes: map,
+              liveSeries: next.slice(-240),
+              liveError: null,
+              liveLoading: false,
+            };
+          });
         } catch (err) {
           set({
             liveError: err instanceof Error ? err.message : String(err),

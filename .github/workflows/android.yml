@@ -89,9 +89,14 @@ jobs:
                (17 Nov 2026, 5-minute bars + 90 daily bars for all 50 names).
 
             **Live ticker (optional)**
-            Run `backend/` (`npm install && npm start`) and point
-            **Settings → Server URL** at it. The proxy streams real Yahoo
-            Finance quotes for the same 50 tickers; no prices are simulated.
+            Tap the mode pill at the top right to switch to Live. Settings → Live feed →
+            "Direct NSE feed" polls all 50 Nifty 50 quotes from Moneycontrol's public NSE feed
+            every 30 seconds — no server, key or account. Your own proxy is still supported
+            there if you prefer.
+
+            **Category tab** — all 50 names grouped into 13 sectors and 28 industries, with
+            equal-weight group moves, breadth and traded value, sorted so the biggest industry
+            changes are on top.
 
             **No account, no broker, no money.** Every fill is paper and stays
             on the device. Education and tooling, not investment advice.
