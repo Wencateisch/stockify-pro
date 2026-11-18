@@ -31,6 +31,7 @@ jobs:
           git config user.name "stockify-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B live-data
-          git add -f out/live.json
+          cp out/live.json live.json
+          git add -f live.json
           git commit -m "Live quotes $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "No change"
           git push -f origin live-data
