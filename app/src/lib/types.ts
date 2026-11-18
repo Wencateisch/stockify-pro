@@ -217,6 +217,8 @@ export interface PriceAlert {
   name: string;
   price: number;
   dir: "above" | "below";
+  /** Price when the alert was armed; used so a level is only ever crossed once. */
+  baseline?: number;
   createdAt: number;
   triggeredAt: number | null;
   triggeredPrice: number | null;
@@ -224,6 +226,8 @@ export interface PriceAlert {
 
 export interface Settings {
   mode: "snapshot" | "replay" | "live";
+  /** "direct" talks to the public Moneycontrol feed; "server" uses your own proxy. */
+  liveSource: "direct" | "server";
   serverUrl: string;
   sound: boolean;
   haptics: boolean;

@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import type { LiveQuote } from "./data";
 import { loadMarket, fetchLiveQuotes } from "./data";
+import { fetchMcQuotes, MC_IDS } from "./mc";
 import { istDateStr, istTs } from "./time";
 
 export interface Toast {
@@ -45,6 +46,7 @@ export const DEFAULT_RULES: Rules = {
 
 export const DEFAULT_SETTINGS: Settings = {
   mode: "snapshot",
+  liveSource: "direct",
   serverUrl: "http://localhost:3001",
   sound: true,
   haptics: true,
@@ -142,7 +144,17 @@ export const useApp = create<AppState>()(
         if (liveLoading) return;
         set({ liveLoading: true });
         try {
-          const quotes = await fetchLiveQuotes(settings.serverUrl);
+          const quotes =
+            settings.liveSource === "server"
+              ? await fetchLiveQuotes(settings.serverUrl)
+              : await fetchMcQuotes(Object.keys(MC_IDS));
+          if (!quotes.length) {
+            throw new Error(
+              settings.liveSource === "server"
+                ? "The server returned no usable quotes."
+                : "The direct feed returned no usable quotes. Check the connection and try again.",
+            );
+          }
           const map: Record<string, LiveQuote> = {};
           for (const q of quotes) map[q.symbol.toUpperCase()] = { ...q, symbol: q.symbol.toUpperCase() };
           set({ liveQuotes: map, liveError: null, liveLoading: false });
@@ -227,8 +239,7 @@ export const useApp = create<AppState>()(
           triggeredPrice: null,
         };
         set((s) => ({ alerts: [alert, ...s.alerts] }));
-      },
-      removeAlert: (id) => set((s) => ({ alerts: s.alerts.filter((a) => a.id !== id) })),
+      },      removeAlert: (id) => set((s) => ({ alerts: s.alerts.filter((a) => a.id !== id) })),
       markAlertTriggered: (id, price) =>
         set((s) => ({
           alerts: s.alerts.map((a) =>
@@ -275,7 +286,12 @@ export const useApp = create<AppState>()(
           ...current,
           ...p,
           rules: { ...DEFAULT_RULES, ...(p.rules || {}) },
-          settings: { ...DEFAULT_SETTINGS, ...(p.settings || {}), mode: "snapshot" },
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(p.settings || {}),
+            liveSource: p.settings?.liveSource === "server" ? "server" : "direct",
+            mode: "snapshot",
+          },
           watchlist: Array.isArray(p.watchlist) && p.watchlist.length ? p.watchlist : DEFAULT_WATCHLIST,
           positions: Array.isArray(p.positions) ? p.positions : [],
           closedTrades: Array.isArray(p.closedTrades) ? p.closedTrades : [],

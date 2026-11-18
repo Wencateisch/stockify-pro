@@ -44,9 +44,10 @@ high/low, rather than pretending the trade happened.
 ![Time Machine](docs/time-machine.png)
 
 **5 · Journal, alerts and settings** — paper positions marked to the snapshot / replay clock /
-live feed, automatic stop and target fills, closed-trade stats in R, price alerts that fire on
-the spot, and editable rules (capital, per-trade and daily loss limits, position cap, order cap,
-trade count, entry window, flat-by time, blocked tickers).
+live feed, automatic stop and target fills, closed-trade stats in R, price alerts that fire when the
+price **crosses** the armed level (checked every 2.5 s, and on the replay clock too), and editable
+rules (capital, per-trade and daily loss limits, position cap, order cap, trade count, entry window,
+flat-by time, blocked tickers).
 
 ## The rules, adapted from the Day Trader skill
 
@@ -72,10 +73,15 @@ Any breach blocks the order and says why. There is no "override" button.
 - The intraday tab always charts the **last complete session** in the snapshot and says which
   date that is. Where Yahoo dropped a 5-minute print, the scanner reports the missing bars and
   uses the prints that exist — it never interpolates one.
-- **Live mode** is optional: run `backend/` and the same 50 tickers are proxied from Yahoo every
-  15 seconds. The proxy copies the upstream `meta` block; it does not simulate, smooth or
-  fabricate prices.
-- Prices are exchange-delayed, and the equal-weight proxy is **not** the NIFTY 50 index.
+- **Live mode** needs no server: the app reads Moneycontrol's public NSE price feed directly in
+  the browser every 15 seconds. All 50 scrip ids are pinned in `app/src/lib/mc.ts`, and each one
+  was verified against the feed's `NSEID` field so a bad key cannot show another company's quote.
+  The feed sends `Access-Control-Allow-Origin: *`, so it also works on the static GitHub Pages build.
+- **Your own server** is still supported (`backend/`), and is the only option if you want to add a
+  provider of your choice. Point Settings → Live source at "My server" and set its URL.
+- Prices are exchange-delayed, and the equal-weight proxy is **not** the NIFTY 50 index. The desk
+  chart is built from the last complete session; live quotes move the symbol, watchlist, journal
+  and alert prices, not the historical tape.
 - Nothing here connects to a broker. Fills, positions and P&L are paper and stay in
   `localStorage` on the device.
 
@@ -108,7 +114,11 @@ cd app/android
 
 Icons and splash screens come from `scripts/make-icons.ps1` (Windows PowerShell / GDI+).
 
-### Live feed (optional)
+### Live feed
+
+Live mode works with **no backend at all**: Settings → Live feed → "Direct NSE feed" polls
+Moneycontrol's public NSE endpoint every 15 seconds from the browser. If you would rather run your
+own proxy (or add a provider), the bundled backend proxies Yahoo Finance instead:
 
 ```bash
 cd backend
@@ -125,8 +135,8 @@ npm start                   # http://localhost:3001
 | `GET /api/news?limit=12` | Nifty headlines from Yahoo's RSS feed |
 | Socket.IO `quotes` | the same array, pushed every refresh |
 
-Point **Settings → Server URL** at it (use your LAN IP for a phone, e.g.
-`http://192.168.1.20:3001`) and tap the status chip to switch between snapshot and live.
+Then set **Settings → Live source → My server** (use your LAN IP for a phone, e.g.
+`http://192.168.1.20:3001`).
 
 `Dockerfile` builds the web bundle and the proxy into one image (`PORT=3001`).
 

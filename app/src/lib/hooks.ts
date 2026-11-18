@@ -30,11 +30,12 @@ export function usePricePoint(inst: Instrument | null): PricePoint | null {
   const mode = useApp((s) => s.settings.mode);
   const replay = useApp((s) => s.replay);
   const liveQuotes = useApp((s) => s.liveQuotes);
-  const tick = useNow(1000, mode === "live" && !replay);
+  const priceMode = replay ? "replay" : mode;
+  const tick = useNow(1000, priceMode === "live" && !replay);
   void tick;
   return useMemo(
-    () => (inst ? priceOf(inst, market, mode, replay, liveQuotes) : null),
-    [inst, market, mode, replay, liveQuotes, tick],
+    () => (inst ? priceOf(inst, market, priceMode, replay, liveQuotes) : null),
+    [inst, market, priceMode, replay, liveQuotes, tick],
   );
 }
 
@@ -121,19 +122,20 @@ function parseFlatBy(value: string): number {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
-/** Polls the optional live backend while the mode is "live". */
+/** Polls the live feed while the mode is "live". Direct feed every 15s, own server every 30s. */
 export function useLiveAutoRefresh() {
   const mode = useApp((s) => s.settings.mode);
+  const source = useApp((s) => s.settings.liveSource);
   const refresh = useApp((s) => s.refreshLive);
   useEffect(() => {
     if (mode !== "live") return;
     void refresh();
-    const id = window.setInterval(() => void refresh(), 30_000);
+    const id = window.setInterval(() => void refresh(), source === "direct" ? 15_000 : 30_000);
     return () => window.clearInterval(id);
-  }, [mode, refresh]);
+  }, [mode, source, refresh]);
 }
 
-/** Triggers paper alerts when the current price crosses the line. */
+/** Fires paper alerts when the price actually crosses the armed level. */
 export function useAlertWatcher() {
   const market = useApp((s) => s.market);
   const mode = useApp((s) => s.settings.mode);
@@ -143,34 +145,52 @@ export function useAlertWatcher() {
   const rules = useApp((s) => s.rules);
   const settings = useApp((s) => s.settings);
   const marked = useRef<Set<string>>(new Set());
+  const lastPrice = useRef<Map<string, number>>(new Map());
   const replayMinutes = replay?.minutes ?? 0;
-  const now = useNow(2500, mode !== "replay");
+  // The tick is what re-evaluates the watcher in every mode, including snapshot.
+  const now = useNow(2500);
   void now;
 
   useEffect(() => {
     if (!market) return;
+    const alive = new Set(alerts.map((a) => a.id));
+    for (const id of [...lastPrice.current.keys()]) {
+      if (!alive.has(id)) lastPrice.current.delete(id);
+    }
     const active = alerts.filter((a) => !a.triggeredAt && !marked.current.has(a.id));
     if (!active.length) return;
+    const priceMode = replay ? "replay" : mode;
     for (const alert of active) {
       const inst = market.symbols.find((s) => s.symbol === alert.symbol);
       if (!inst) continue;
-      const p = priceOf(inst, market, mode, replay, liveQuotes);
-      const hit = alert.dir === "above" ? p.price >= alert.price : p.price <= alert.price;
+      // Never compare a live alert against the frozen snapshot fallback.
+      if (priceMode === "live" && !liveQuotes[alert.symbol]) continue;
+      const p = priceOf(inst, market, priceMode, replay, liveQuotes);
+      const price = p.price;
+      const prev = lastPrice.current.get(alert.id);
+      lastPrice.current.set(alert.id, price);
+
+      // Crossing, not "already on the other side": a fresh alert starts from the
+      // price it was armed at, so arming above the market cannot fire instantly.
+      const from = prev ?? alert.baseline;
+      if (from === undefined || !Number.isFinite(from)) continue;
+      const hit =
+        alert.dir === "above" ? from < alert.price && price >= alert.price : from > alert.price && price <= alert.price;
       if (!hit) continue;
       marked.current.add(alert.id);
       const st = useApp.getState();
-      st.markAlertTriggered(alert.id, p.price);
+      st.markAlertTriggered(alert.id, price);
       st.pushToast(
         `${alert.symbol} ${alert.dir === "above" ? "crossed above" : "fell below"} ₹${alert.price.toFixed(
           2,
-        )} — now ₹${p.price.toFixed(2)}`,
+        )} — now ₹${price.toFixed(2)}`,
         "amber",
       );
       chime("alert", settings.sound);
       if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         try {
           new Notification(`${alert.symbol} price alert`, {
-            body: `${alert.dir === "above" ? "Above" : "Below"} ₹${alert.price.toFixed(2)} · now ₹${p.price.toFixed(2)}`,
+            body: `${alert.dir === "above" ? "Above" : "Below"} ₹${alert.price.toFixed(2)} · now ₹${price.toFixed(2)}`,
           });
         } catch {
           /* ignore */
@@ -178,5 +198,5 @@ export function useAlertWatcher() {
       }
       void rules;
     }
-  }, [alerts, market, mode, replay, replayMinutes, liveQuotes, settings.sound, rules]);
+  }, [alerts, market, mode, replay, replayMinutes, liveQuotes, settings.sound, rules, now]);
 }

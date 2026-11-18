@@ -36,10 +36,11 @@ export function SettingsScreen() {
   const testLive = async () => {
     await refreshLive();
     const state = useApp.getState();
+    const label = state.settings.liveSource === "direct" ? "the direct NSE feed" : "your server";
     if (state.liveError) {
-      pushToast(`Live feed failed: ${state.liveError}`, "red");
+      pushToast(`${label} failed: ${state.liveError}`, "red");
     } else {
-      pushToast(`Live feed answered with ${Object.keys(state.liveQuotes).length} quotes.`, "green");
+      pushToast(`${label} answered with ${Object.keys(state.liveQuotes).length} quotes.`, "green");
     }
   };
 
@@ -189,28 +190,53 @@ export function SettingsScreen() {
           }}
           options={[
             { value: "snapshot", label: "Bundled snapshot" },
-            { value: "live", label: "Live server" },
+            { value: "live", label: "Live feed" },
           ]}
         />
         <p className="tiny muted" style={{ marginTop: 8, lineHeight: 1.5 }}>
-          The snapshot is real Yahoo Finance NSE data bundled at build time. Live mode polls an optional
-          backend you run yourself; it is off by default because the app must work with no server at all.
+          The snapshot is real Yahoo Finance NSE data bundled at build time. Live mode polls the same 50
+          NSE names from Moneycontrol&apos;s public feed every 15 seconds — no server, no key — or from a
+          proxy you run yourself.
         </p>
 
         {settings.mode === "live" && (
           <>
-            <Field
-              label="Server URL"
-              hint="Must serve GET /api/quotes with CORS. A page on HTTPS can only reach an HTTPS server, so use https:// for a hosted proxy and http:// only from the native app or localhost."
-            >
-              <input
-                className="input"
-                value={settings.serverUrl}
-                onChange={(e) => setSettings({ serverUrl: e.target.value })}
-                placeholder="http://localhost:3001"
-                spellCheck={false}
+            <div className="field" style={{ marginTop: 12 }}>
+              <label>Live source</label>
+              <Segmented
+                ariaLabel="Live source"
+                value={settings.liveSource}
+                onChange={(liveSource) => {
+                  setSettings({ liveSource });
+                  void refreshLive();
+                }}
+                options={[
+                  { value: "direct", label: "Direct NSE feed" },
+                  { value: "server", label: "My server" },
+                ]}
               />
-            </Field>
+              <span className="tiny muted" style={{ display: "block", marginTop: 6, lineHeight: 1.5 }}>
+                {settings.liveSource === "direct"
+                  ? "Fetched straight from the browser. All 50 scrip ids are pinned and NSE-verified, so a bad key can never show another company's price."
+                  : "Your own backend, proxying Yahoo Finance. Must serve GET /api/quotes with CORS."}
+              </span>
+            </div>
+
+            {settings.liveSource === "server" && (
+              <Field
+                label="Server URL"
+                hint="A page on HTTPS can only reach an HTTPS server, so use https:// for a hosted proxy and http:// only from the native app or localhost."
+              >
+                <input
+                  className="input"
+                  value={settings.serverUrl}
+                  onChange={(e) => setSettings({ serverUrl: e.target.value })}
+                  placeholder="http://localhost:3001"
+                  spellCheck={false}
+                />
+              </Field>
+            )}
+
             <div className="row" style={{ gap: 8, marginTop: 10 }}>
               <button type="button" className="btn ghost grow" onClick={() => void testLive()} disabled={liveLoading}>
                 {liveLoading ? <><span className="spinner" /> Testing</> : <><Icon name="wifi" size={15} /> Test connection</>}
@@ -220,6 +246,24 @@ export function SettingsScreen() {
               </span>
             </div>
             {liveError && <div className="tiny down" style={{ marginTop: 8 }}>{liveError}</div>}
+            {!liveError && Object.keys(liveQuotes).length > 0 && (
+              <div className="tiny muted" style={{ marginTop: 8 }}>
+                Last tick{" "}
+                {(() => {
+                  const stamps = Object.values(liveQuotes)
+                    .map((q) => q.asOf || 0)
+                    .filter((t) => t > 0);
+                  if (!stamps.length) return "just now";
+                  return new Date(Math.max(...stamps)).toLocaleTimeString("en-IN", {
+                    timeZone: "Asia/Kolkata",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  }) + " IST";
+                })()}
+                .
+              </div>
+            )}
           </>
         )}
 

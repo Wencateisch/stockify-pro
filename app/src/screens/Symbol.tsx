@@ -321,16 +321,26 @@ export function SymbolScreen({ symbol }: { symbol: string }) {
 
   const openAlert = (price0: number) => {
     if (!p) return;
-    setAlertPrice(Number(price0.toFixed(2)));
-    setAlertDir(price0 >= p.price ? "above" : "below");
+    // Arming at exactly the current price would be a crossing that already
+    // happened, so the default sits 1% away in the chosen direction.
+    const exact = price0 <= 0 || Math.abs(price0 - p.price) < 0.0001;
+    const level = exact ? p.price * 1.01 : price0;
+    setAlertPrice(Number(level.toFixed(2)));
+    setAlertDir(level >= p.price ? "above" : "below");
     setAlertOpen(true);
   };
 
   const createAlert = () => {
     if (!inst || !(alertPrice > 0)) return;
-    addAlert({ symbol: inst.symbol, name: inst.name, price: alertPrice, dir: alertDir });
+    addAlert({
+      symbol: inst.symbol,
+      name: inst.name,
+      price: alertPrice,
+      dir: alertDir,
+      baseline: p?.price,
+    });
     setAlertOpen(false);
-    pushToast(`Alert set: ${inst.symbol} ${alertDir} ₹${fmtPrice(alertPrice)}.`, "info");
+    pushToast(`Alert armed: ${inst.symbol} crosses ${alertDir === "above" ? "above" : "below"} ₹${fmtPrice(alertPrice)}.`, "info");
   };
 
   if (!inst) {
@@ -809,7 +819,8 @@ export function SymbolScreen({ symbol }: { symbol: string }) {
           </Field>
         </div>
         <p className="tiny muted" style={{ marginTop: 12 }}>
-          Alerts run while the app is open and fire on the current snapshot, live feed or replay price.
+          Alerts are checked while the app is open and fire when the price crosses this level. A frozen
+          snapshot never moves, so switch on the live feed for alerts to cross.
           {typeof Notification !== "undefined" && Notification.permission !== "granted"
             ? " Allow notifications in Settings for a system banner too."
             : ""}
@@ -820,7 +831,9 @@ export function SymbolScreen({ symbol }: { symbol: string }) {
         Snapshot {fmtDate(inst.quote.asOf)} · daily {inst.daily.length} bars · intraday {inst.intraday.length} bars on{" "}
         {dataDate ? dateLabel(dataDate, true) : "—"}.
         <br />
-        Yahoo Finance NSE data · paper only · not financial advice.
+        {settings.mode === "live"
+          ? "Live quotes from the public NSE feed · snapshot history from Yahoo Finance · paper only · not financial advice."
+          : "Yahoo Finance NSE data · paper only · not financial advice."}
       </p>
     </div>
   );

@@ -46,7 +46,7 @@ export function priceOf(
         volume: q.volume,
         minutes: null,
         source: "live",
-        sessionDate: new Date().toISOString().slice(0, 10),
+        sessionDate: istDateStr(q.asOf ?? Date.now()),
         atLabel: "live",
       };
     }

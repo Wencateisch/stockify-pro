@@ -18,6 +18,8 @@ export function AlertsScreen() {
   const alerts = useApp((s) => s.alerts);
   const addAlert = useApp((s) => s.addAlert);
   const removeAlert = useApp((s) => s.removeAlert);
+  const setSettings = useApp((s) => s.setSettings);
+  const refreshLive = useApp((s) => s.refreshLive);
   const pushToast = useApp((s) => s.pushToast);
   const clock = useMarketClock();
 
@@ -33,20 +35,24 @@ export function AlertsScreen() {
     [market, symbol],
   );
   const p = usePricePoint(inst);
-  const current = inst && p ? priceOf(inst, market, settings.mode, replay, liveQuotes).price : 0;
+  const current = p?.price ?? 0;
+  const priceMode = replay ? "replay" : settings.mode;
+
+  const liveLabel = settings.liveSource === "direct" ? "direct NSE feed" : "your server";
+
+  /** A crossing alert needs breathing room, so the default level sits 1% away. */
+  const levelFor = (base: number, side: "above" | "below") =>
+    base > 0 ? Number((base * (side === "above" ? 1.01 : 0.99)).toFixed(2)) : 0;
 
   useEffect(() => {
     if (symbol || !market) return;
     const first = market.symbols.find((s) => s.symbol === "RELIANCE") || market.symbols[0];
-    if (first) {
-      setSymbol(first.symbol);
-      setPriceText(Number(first.quote.price.toFixed(2)));
-    }
+    if (first) setSymbol(first.symbol);
   }, [market, symbol]);
 
   useEffect(() => {
     if (!p) return;
-    setPriceText(Number(p.price.toFixed(2)));
+    setPriceText(levelFor(p.price, dir));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol]);
 
@@ -55,10 +61,16 @@ export function AlertsScreen() {
 
   const create = () => {
     if (!inst || !(priceText > 0)) return;
-    addAlert({ symbol: inst.symbol, name: inst.name, price: priceText, dir });
+    addAlert({
+      symbol: inst.symbol,
+      name: inst.name,
+      price: priceText,
+      dir,
+      baseline: current || inst.quote.price,
+    });
     chime("alert", settings.sound);
     buzz(10, settings.haptics);
-    pushToast(`Alert set: ${inst.symbol} ${dir} ₹${fmtPrice(priceText)}.`, "info");
+    pushToast(`Alert armed: ${inst.symbol} crosses ${dir === "above" ? "above" : "below"} ₹${fmtPrice(priceText)}.`, "info");
   };
 
   const askPermission = async () => {
@@ -84,7 +96,7 @@ export function AlertsScreen() {
   const currentFor = (sym: string) => {
     const i = market?.symbols.find((s) => s.symbol === sym);
     if (!i) return 0;
-    return priceOf(i, market, settings.mode, replay, liveQuotes).price;
+    return priceOf(i, market, priceMode, replay, liveQuotes).price;
   };
 
   if (!market) {
@@ -101,9 +113,11 @@ export function AlertsScreen() {
       <div className="page-head">
         <div>
           <h1 className="page-title">Alerts</h1>
-          <div className="page-sub">Price watchers on the snapshot, live feed or replay clock</div>
+          <div className="page-sub">Crossing alerts on the {liveLabel}, the snapshot or the replay clock</div>
         </div>
-        <span className="pill">{active.length} armed</span>
+        <span className={`pill ${settings.mode === "live" ? "green" : ""}`}>
+          {settings.mode === "live" ? "Live" : "Snapshot"}
+        </span>
       </div>
 
       <div className="glass card">
@@ -119,7 +133,10 @@ export function AlertsScreen() {
             onChange={(e) => {
               setSymbol(e.target.value);
               const i = market.symbols.find((s) => s.symbol === e.target.value);
-              if (i) setPriceText(Number(i.quote.price.toFixed(2)));
+              if (i) {
+                const base = priceOf(i, market, priceMode, replay, liveQuotes).price;
+                setPriceText(levelFor(base, dir));
+              }
             }}
           >
             {market.symbols.map((s) => (
@@ -136,7 +153,10 @@ export function AlertsScreen() {
             <Segmented
               ariaLabel="Alert direction"
               value={dir}
-              onChange={setDir}
+              onChange={(next) => {
+                setDir(next);
+                if (current > 0) setPriceText(levelFor(current, next));
+              }}
               options={[
                 { value: "above", label: "Above" },
                 { value: "below", label: "Below" },
@@ -145,16 +165,63 @@ export function AlertsScreen() {
           </Field>
         </div>
 
+        <div className="row" style={{ gap: 8, marginTop: 10 }}>
+          <button
+            type="button"
+            className="btn xs ghost"
+            onClick={() => current > 0 && setPriceText(levelFor(current, "above"))}
+          >
+            1% above
+          </button>
+          <button
+            type="button"
+            className="btn xs ghost"
+            onClick={() => current > 0 && setPriceText(levelFor(current, "below"))}
+          >
+            1% below
+          </button>
+          <span className="tiny muted" style={{ marginLeft: "auto" }}>
+            crosses the level
+          </span>
+        </div>
+
         <button type="button" className="btn primary block" style={{ marginTop: 12 }} onClick={create} disabled={!(priceText > 0)}>
           <Icon name="bell" size={16} /> Arm alert
         </button>
 
         <p className="tiny muted" style={{ marginTop: 10, lineHeight: 1.5 }}>
           {current > 0 && priceText > 0
-            ? `${dir === "above" ? "Above" : "Below"} ₹${fmtPrice(priceText)} is ${pct(((priceText - current) / current) * 100)} from the current ₹${fmtPrice(current)}.`
+            ? `${dir === "above" ? "Above" : "Below"} ₹${fmtPrice(priceText)} is ${pct(((priceText - current) / current) * 100)} from the current ₹${fmtPrice(current)}. Fires only when the price crosses it.`
             : "Pick a price to arm the alert."}
         </p>
       </div>
+
+      {settings.mode === "snapshot" && !replay && (
+        <div className="glass card tight">
+          <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
+            <Icon name="info" size={16} style={{ color: "var(--amber)", marginTop: 1 }} />
+            <div className="col grow" style={{ gap: 4 }}>
+              <span className="small strong">Snapshot prices never move</span>
+              <span className="tiny muted" style={{ lineHeight: 1.5 }}>
+                Armed alerts are saved either way, but they can only fire once a price actually moves.
+                Switch on the {liveLabel} to watch them cross.
+              </span>
+              <button
+                type="button"
+                className="btn ghost xs"
+                style={{ marginTop: 6, alignSelf: "flex-start" }}
+                onClick={() => {
+                  setSettings({ mode: "live" });
+                  void refreshLive();
+                  pushToast(`Live mode on · ${liveLabel}. Alerts now watch real ticks.`, "green");
+                }}
+              >
+                <Icon name="wifi" size={13} /> Go live
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="glass card tight">
         <div className="row" style={{ gap: 10 }}>
@@ -189,8 +256,8 @@ export function AlertsScreen() {
       </div>
 
       <div className="section-head">
-        <div className="section-title"><span className="dot" /> Armed</div>
-        <span className="tiny muted">{clock.status === "replay" ? "replay clock" : "real clock"}</span>
+        <div className="section-title"><span className="dot" /> Armed · {active.length}</div>
+        <span className="tiny muted">{replay ? "replay clock" : settings.mode === "snapshot" ? "static snapshot" : "live clock"}</span>
       </div>
 
       <div className="glass list">
@@ -254,9 +321,11 @@ export function AlertsScreen() {
         <div className="row" style={{ gap: 8, alignItems: "flex-start" }}>
           <Icon name="info" size={16} style={{ color: "var(--blue)", marginTop: 1 }} />
           <span className="tiny muted" style={{ lineHeight: 1.55 }}>
-            Alerts are evaluated while the app is open, against the current price of the selected mode.
-            A background push needs the optional live backend and a service worker; the bundled snapshot
-            does not pretend to run one.
+            Alerts are evaluated every few seconds while the app is open, against the current price of
+            the selected mode, and fire on the crossing — not just because the level is already on the
+            other side. In snapshot mode the bundled price is frozen, so an alert stays armed until you
+            switch to the live feed. A background push needs a service worker; this build does not
+            pretend to run one.
           </span>
         </div>
       </div>

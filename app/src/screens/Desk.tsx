@@ -225,7 +225,9 @@ export function DeskScreen() {
         </div>
         {settings.mode === "live" && (
           <div className="tiny muted" style={{ marginTop: 8 }}>
-            Live mode is on. Quotes poll every 30 seconds from {settings.serverUrl}.
+            Live mode is on. {settings.liveSource === "direct"
+              ? "All 50 quotes poll every 15 seconds from the public NSE feed."
+              : `All 50 quotes poll every 30 seconds from ${settings.serverUrl}.`}
           </div>
         )}
       </div>

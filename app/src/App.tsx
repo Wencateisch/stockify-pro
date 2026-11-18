@@ -36,7 +36,10 @@ export function App() {
   const load = useApp((s) => s.loadMarketData);
   const replay = useApp((s) => s.replay);
   const mode = useApp((s) => s.settings.mode);
+  const liveSource = useApp((s) => s.settings.liveSource);
+  const serverUrl = useApp((s) => s.settings.serverUrl);
   const setSettings = useApp((s) => s.setSettings);
+  const refreshLive = useApp((s) => s.refreshLive);
   const stopReplay = useApp((s) => s.stopReplay);
   const pushToast = useApp((s) => s.pushToast);
   const clock = useMarketClock();
@@ -65,9 +68,10 @@ export function App() {
     }
     const next = mode === "live" ? "snapshot" : "live";
     setSettings({ mode: next });
+    if (next === "live") void refreshLive();
     pushToast(
       next === "live"
-        ? "Live mode needs your own backend. Add its URL in Settings and test the connection."
+        ? `Live mode: ${liveSource === "direct" ? "the public NSE feed, refreshed every 15 seconds" : serverUrl}.`
         : "Snapshot mode: the bundled real NSE data.",
       "info",
     );
@@ -110,7 +114,7 @@ export function App() {
           type="button"
           className={`pill ${toneFor(replay ? "replay" : clock.status)}`}
           onClick={cycleMode}
-          title={replay ? "Exit replay" : "Switch between the snapshot and the live server"}
+          title={replay ? "Exit replay" : "Switch between the snapshot and the live feed"}
           style={{ cursor: "pointer" }}
         >
           {clock.status === "open" || clock.status === "replay" ? <span className="live-dot" /> : null}

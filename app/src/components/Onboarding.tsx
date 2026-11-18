@@ -9,7 +9,7 @@ const STEPS = [
     icon: "desk" as const,
     body: [
       "A Nifty 50 desk built around one complete day-trading loop: scan, time the entry, plan the exit, replay the odds, size in rupees, then pass the risk gate.",
-      "Every price comes from a bundled Yahoo Finance NSE snapshot. Nothing is simulated, and every order is paper.",
+      "The bundled snapshot is real Yahoo Finance NSE history, and the live feed pulls direct NSE quotes. Nothing is simulated, and every order is paper.",
     ],
   },
   {

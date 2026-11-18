@@ -121,6 +121,8 @@ export interface LiveQuote {
   dayHigh: number;
   dayLow: number;
   volume: number;
+  /** Exchange timestamp of the tick, when the source reports one. */
+  asOf?: number;
 }
 
 export async function fetchLiveQuotes(serverUrl: string): Promise<LiveQuote[]> {
