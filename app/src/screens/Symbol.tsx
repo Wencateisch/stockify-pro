@@ -22,6 +22,7 @@ import {
 } from "../lib/time";
 import { compact, inr, pct, price as fmtPrice, shares, signedInr } from "../lib/format";
 import { Icon } from "../components/Icons";
+import { IstStamp } from "../components/IstClock";
 import { SeriesChart, type ChartBand } from "../components/Chart";
 import { SetupExplainer, SetupPills } from "../components/SetupPills";
 import { Empty, Field, KV, Loading, NumInput, Segmented, Stat } from "../components/UI";
@@ -366,6 +367,12 @@ export function SymbolScreen({ symbol }: { symbol: string }) {
   const held = positions.filter((x) => x.symbol === inst.symbol);
   const dataDate = intradaySessionDate(inst);
 
+  const quoteTs = liveQuotes[inst.symbol]?.asOf || 0;
+  const stampTs =
+    settings.mode === "live" && quoteTs
+      ? quoteTs
+      : Date.parse(inst.quote.asOf) || Date.parse(market?.generatedAt || "") || 0;
+
   return (
     <div className="page">
       <div className="row" style={{ gap: 12, padding: "2px 2px 0" }}>
@@ -398,6 +405,13 @@ export function SymbolScreen({ symbol }: { symbol: string }) {
               <span>{p ? signedInr(p.change) : "—"}</span>
               <span>{p ? pct(p.changePct) : ""}</span>
               <span className="tiny muted nowrap">{p?.source === "replay" ? `replay ${p.atLabel}` : p?.source}</span>
+            </div>
+            <div className="tiny muted" style={{ marginTop: 7 }}>
+              {replay ? (
+                `Replay clock ${minutesLabel(replay.minutes)} IST`
+              ) : (
+                <IstStamp ts={stampTs} label="Quote as of" />
+              )}
             </div>
           </div>
           <div className="col" style={{ alignItems: "flex-end", gap: 6 }}>

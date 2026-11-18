@@ -3,12 +3,13 @@ import { useApp, paperCash, lossAtRiskToday, realizedPnlToday, tradesToday } fro
 import { useMarketClock, useNow, usePricePoint } from "../lib/hooks";
 import { scanOrb } from "../lib/orb";
 import { scanDaily, SETUP_LABELS } from "../lib/indicators";
-import { intradayProxy, tapeBreadth, sparkValues, initials, fmtDate, movers } from "../lib/market";
+import { intradayProxy, tapeBreadth, sparkValues, initials, movers } from "../lib/market";
 import { priceOf } from "../lib/prices";
 import { navigate } from "../router";
-import { OPEN_MIN, todayIst, istParts, minutesLabel } from "../lib/time";
+import { OPEN_MIN, todayIst, istParts, minutesLabel, istClockStr } from "../lib/time";
 import { inr, pct, price as fmtPrice, shares } from "../lib/format";
 import { Icon } from "../components/Icons";
+import { IstStamp } from "../components/IstClock";
 import { SeriesChart, Sparkline } from "../components/Chart";
 import { SetupPills } from "../components/SetupPills";
 import { Empty, Loading, Stat } from "../components/UI";
@@ -148,14 +149,7 @@ export function DeskScreen() {
         return { x: m, label: minutesLabel(m) };
       })
     : [];
-  const liveClock = live?.asOf
-    ? new Date(live.asOf).toLocaleTimeString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      })
-    : "";
+  const liveClock = live?.asOf ? istClockStr(live.asOf) : "";
 
   const topHit = orb?.hits[0];
   const breadthPct = (shown.up / Math.max(1, shown.count)) * 100;
@@ -494,7 +488,8 @@ export function DeskScreen() {
       </div>
 
       <p className="tiny muted center" style={{ lineHeight: 1.6, padding: "4px 8px 0" }}>
-        {market.source}. Snapshot {fmtDate(market.generatedAt)}. Intraday session {proxy.date || "—"}.
+        {market.source}. <IstStamp ts={Date.parse(market.generatedAt)} label="Snapshot" />. Intraday session{" "}
+        {proxy.date || "—"}.
         <br />
         Equal-weight proxy, not the NIFTY 50 index. Every order is paper. Not financial advice.
       </p>

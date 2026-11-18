@@ -4,9 +4,10 @@ import { priceOf } from "../lib/prices";
 import { sparkValues, initials } from "../lib/market";
 import { industryOf, sectorOf, industriesIn, SECTOR_ORDER, SECTOR_BLURB } from "../lib/sectors";
 import { navigate, symbolPath } from "../router";
-import { minutesLabel } from "../lib/time";
+import { minutesLabel, istClockStr } from "../lib/time";
 import { pct, price as fmtPrice } from "../lib/format";
 import { Icon } from "../components/Icons";
+import { IstStamp } from "../components/IstClock";
 import { Sparkline } from "../components/Chart";
 import { Empty, Loading, Segmented } from "../components/UI";
 import type { Instrument } from "../lib/types";
@@ -103,6 +104,13 @@ export function CategoryScreen() {
   }, [market, mode, replay, liveQuotes]);
 
   const liveCount = rows.filter((r) => r.source === "live").length;
+
+  const quoteAsOf = useMemo(() => {
+    let t = 0;
+    for (const q of Object.values(liveQuotes)) if ((q.asOf || 0) > t) t = q.asOf || 0;
+    return t;
+  }, [liveQuotes]);
+  const stampTs = mode === "live" && quoteAsOf ? quoteAsOf : Date.parse(market?.generatedAt || "") || 0;
 
   const groups = useMemo<Group[]>(() => {
     if (groupBy === "sector") {
@@ -250,6 +258,17 @@ export function CategoryScreen() {
             {rows.length} names in {groups.length} {groupBy === "sector" ? "sectors" : "industries"} ·{" "}
             {upGroups} up / {downGroups} down · equal-weight
           </div>
+          {replay ? (
+            <div className="tiny muted" style={{ marginTop: 4 }}>
+              Replay clock {minutesLabel(replay.minutes)} IST · live wall clock with seconds above
+            </div>
+          ) : (
+            !!stampTs && (
+              <div className="tiny muted" style={{ marginTop: 4 }}>
+                <IstStamp ts={stampTs} label={mode === "live" ? "Quotes as of" : "Snapshot taken"} />
+              </div>
+            )
+          )}
         </div>
         <span className={`pill ${mode === "live" && !replay ? "green" : ""}`}>{sourcePill}</span>
       </div>
@@ -375,6 +394,7 @@ export function CategoryScreen() {
               <div className="cat-rows">
                 {g.rows.map((r) => {
                   const up = r.changePct >= 0;
+                  const rowAsOf = mode === "live" && !replay ? liveQuotes[r.symbol]?.asOf || 0 : 0;
                   return (
                     <button
                       key={r.symbol}
@@ -394,6 +414,7 @@ export function CategoryScreen() {
                       <div className="col right" style={{ gap: 2, flex: "none" }}>
                         <span className="num strong">₹{fmtPrice(r.price)}</span>
                         <span className={`tiny ${up ? "up" : "down"}`}>{pct(r.changePct)}</span>
+                        {!!rowAsOf && <span className="tiny muted mono" style={{ fontSize: 9.5 }}>{istClockStr(rowAsOf)}</span>}
                       </div>
                     </button>
                   );

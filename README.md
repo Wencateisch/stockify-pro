@@ -27,6 +27,10 @@ breadth bar and traded value. Every name is in exactly one industry, so nothing 
 
 ![Categories](docs/category.png)
 
+The **IST clock in the top bar ticks with seconds on every screen**, including symbol and settings.
+Live price pages show the exact feed timestamp (`Quotes as of … IST`), and Category rows show each
+stock's own last-print time — so you always know what moment a change refers to.
+
 **3 · The scanner** — two tabs:
 
 | Tab | What it runs |

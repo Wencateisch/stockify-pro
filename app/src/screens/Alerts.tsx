@@ -6,6 +6,7 @@ import { navigate, symbolPath } from "../router";
 import { dateLabel, istDateStr } from "../lib/time";
 import { pct, price as fmtPrice, timeAgo } from "../lib/format";
 import { Icon } from "../components/Icons";
+import { IstStamp } from "../components/IstClock";
 import { Empty, Field, KV, NumInput, Segmented } from "../components/UI";
 import { chime, buzz } from "../lib/feedback";
 import { initials } from "../lib/market";
@@ -374,7 +375,10 @@ export function AlertsScreen() {
                     {a.dir === "above" ? "Crossed above" : "Fell below"} ₹{fmtPrice(a.price)} at ₹{fmtPrice(a.triggeredPrice || 0)}
                   </span>
                 </div>
-                <span className="tiny muted nowrap">{a.triggeredAt ? timeAgo(a.triggeredAt) : ""}</span>
+                <div className="col right" style={{ gap: 2, flex: "none" }}>
+                  <span className="tiny muted nowrap">{a.triggeredAt ? timeAgo(a.triggeredAt) : ""}</span>
+                  {!!a.triggeredAt && <IstStamp ts={a.triggeredAt} label="" timeOnly />}
+                </div>
               </div>
             ))}
           </div>

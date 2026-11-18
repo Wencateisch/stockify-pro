@@ -247,6 +247,65 @@ svg {
   text-overflow: ellipsis;
 }
 
+.ist-clock {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.ist-date {
+  color: var(--ink-3);
+}
+
+.ist-tz {
+  color: var(--ink-3);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  margin-left: 4px;
+}
+
+.ist-stamp {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    gap: 8px;
+  }
+  .topbar .brand-sub {
+    display: none;
+  }
+  .ist-clock {
+    font-size: 10.5px;
+    padding: 6px 7px;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .brand-name {
+    font-size: 13px;
+  }
+  .ist-clock .ist-tz {
+    display: none;
+  }
+}
+
 .icon-btn {
   width: 38px;
   height: 38px;

@@ -75,6 +75,12 @@ export function istTimeStr(ts: number): string {
   return `${pad(Math.floor(p.minutes / 60))}:${pad(p.minutes % 60)}`;
 }
 
+/** HH:MM:SS on the IST wall clock (never the device's own time zone). */
+export function istClockStr(ts: number): string {
+  const p = istParts(ts);
+  return `${pad(Math.floor(p.minutes / 60))}:${pad(p.minutes % 60)}:${pad(p.seconds)}`;
+}
+
 export function dateLabel(dateStr: string, withYear = false): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();

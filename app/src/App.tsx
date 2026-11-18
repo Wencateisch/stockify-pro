@@ -17,6 +17,7 @@ import { JournalScreen } from "./screens/Journal";
 import { AlertsScreen } from "./screens/Alerts";
 import { SettingsScreen } from "./screens/Settings";
 import { Rail, TabBar } from "./components/Nav";
+import { IstClock } from "./components/IstClock";
 import { ReplayBar } from "./components/ReplayBar";
 import { Toasts } from "./components/Toasts";
 import { Onboarding } from "./components/Onboarding";
@@ -110,6 +111,8 @@ export function App() {
             <div className="grow" />
           </>
         )}
+
+        <IstClock />
 
         <button
           type="button"

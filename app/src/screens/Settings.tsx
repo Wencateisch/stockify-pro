@@ -4,6 +4,7 @@ import { fmtDate } from "../lib/market";
 import { dateLabel, istDateStr, parseHHMM } from "../lib/time";
 import { inr } from "../lib/format";
 import { Icon } from "../components/Icons";
+import { IstStamp } from "../components/IstClock";
 import { Empty, Field, KV, NumInput, Segmented, SwitchRow } from "../components/UI";
 import { Sheet } from "../components/Sheet";
 
@@ -248,20 +249,10 @@ export function SettingsScreen() {
             {liveError && <div className="tiny down" style={{ marginTop: 8 }}>{liveError}</div>}
             {!liveError && Object.keys(liveQuotes).length > 0 && (
               <div className="tiny muted" style={{ marginTop: 8 }}>
-                Last tick{" "}
-                {(() => {
-                  const stamps = Object.values(liveQuotes)
-                    .map((q) => q.asOf || 0)
-                    .filter((t) => t > 0);
-                  if (!stamps.length) return "just now";
-                  return new Date(Math.max(...stamps)).toLocaleTimeString("en-IN", {
-                    timeZone: "Asia/Kolkata",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  }) + " IST";
-                })()}
-                .
+                <IstStamp
+                  ts={Math.max(0, ...Object.values(liveQuotes).map((q) => q.asOf || 0))}
+                  label="Last tick"
+                />
               </div>
             )}
           </>

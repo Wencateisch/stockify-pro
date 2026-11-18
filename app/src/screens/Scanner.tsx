@@ -10,6 +10,7 @@ import { Sparkline } from "../components/Chart";
 import { SetupPills } from "../components/SetupPills";
 import { Empty, Loading, Segmented } from "../components/UI";
 import { Icon } from "../components/Icons";
+import { IstStamp } from "../components/IstClock";
 import type { SetupKey } from "../lib/types";
 
 const CUTOFFS = [OPEN_MIN + 30, 10 * 60 + 30, 12 * 60, CLOSE_MIN];
@@ -79,6 +80,9 @@ export function ScannerScreen() {
         <div>
           <h1 className="page-title">Scanner</h1>
           <div className="page-sub">Five daily setups and the opening-range breakout · {market.symbols.length} names</div>
+          <div className="tiny muted" style={{ marginTop: 4 }}>
+            <IstStamp ts={Date.parse(market.generatedAt)} label="Snapshot taken" />
+          </div>
         </div>
         <span className="pill">{daily.length} daily</span>
       </div>
