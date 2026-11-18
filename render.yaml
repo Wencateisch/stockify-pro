@@ -10,5 +10,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
-      - key: TICK_MS
-        value: 1000
+      - key: REFRESH_MS
+        value: 15000
+      - key: CORS_ORIGIN
+        value: https://wencateisch.github.io

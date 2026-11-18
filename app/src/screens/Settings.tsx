@@ -199,7 +199,10 @@ export function SettingsScreen() {
 
         {settings.mode === "live" && (
           <>
-            <Field label="Server URL" hint="The backend must send CORS headers and serve GET /api/quotes.">
+            <Field
+              label="Server URL"
+              hint="Must serve GET /api/quotes with CORS. A page on HTTPS can only reach an HTTPS server, so use https:// for a hosted proxy and http:// only from the native app or localhost."
+            >
               <input
                 className="input"
                 value={settings.serverUrl}
