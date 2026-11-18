@@ -96,8 +96,8 @@ Any breach blocks the order and says why. There is no "override" button.
 - **If Moneycontrol is blocked on your network**, the app automatically falls back to a published
   backup feed: `.github/workflows/live.yml` runs every 5 minutes, fetches Yahoo's public NSE quotes
   with `scripts/publish-live.mjs` and publishes `live.json` to the `live-data` branch. The app reads
-  it from `raw.githubusercontent.com` (CORS-enabled), so live mode works on web, Android and iPhone
-  without any server of your own. Those prices are **exchange-delayed**, the file is a 5-minute
+  it from `raw.githubusercontent.com` (CORS-enabled, with the GitHub API as a second path), so live
+  mode works on web, Android and iPhone without any server of your own. Those prices are **exchange-delayed**, the file is a 5-minute
   snapshot (not a tick stream), and its exact timestamp is shown in the UI.
 - **Your own server** is still supported (`backend/`), and is the only option if you want to add a
   provider of your choice. Point Settings → Live source at "My server" and set its URL.

@@ -12,6 +12,7 @@ import type { LiveQuote } from "./data";
  * as a tick stream. The exact exchange timestamp is published with each quote.
  */
 const RAW_URL = "https://raw.githubusercontent.com/Wencateisch/stockify-pro/live-data/live.json";
+const API_URL = "https://api.github.com/repos/Wencateisch/stockify-pro/contents/live.json?ref=live-data";
 const MAX_AGE_MS = 3 * 60 * 60_000;
 
 interface PublishedDoc {
@@ -35,14 +36,29 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export async function fetchPublishedQuotes(): Promise<LiveQuote[]> {
-  const res = await fetch(`${RAW_URL}?t=${Date.now()}`, {
-    headers: { accept: "application/json" },
+async function loadDoc(): Promise<PublishedDoc> {
+  const stamp = Date.now();
+  try {
+    const res = await fetch(`${RAW_URL}?t=${stamp}`, {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    });
+    if (res.ok) return (await res.json()) as PublishedDoc;
+  } catch {
+    // Try the API below — some networks block raw.githubusercontent.com.
+  }
+  const res = await fetch(`${API_URL}&t=${stamp}`, {
+    headers: { accept: "application/vnd.github+json" },
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Published feed returned HTTP ${res.status}.`);
+  const file = (await res.json()) as { content?: string };
+  const json = atob(String(file.content || "").replace(/\s/g, ""));
+  return JSON.parse(json) as PublishedDoc;
+}
 
-  const doc = (await res.json()) as PublishedDoc;
+export async function fetchPublishedQuotes(): Promise<LiveQuote[]> {
+  const doc = await loadDoc();
   const age = Date.now() - Date.parse(doc.generatedAt || "");
   if (!Number.isFinite(age) || age < -60_000) throw new Error("The published feed has no valid timestamp.");
   if (age > MAX_AGE_MS) throw new Error("The published feed is older than 3 hours.");
