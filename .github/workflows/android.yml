@@ -16,6 +16,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: app
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: app
+        run: npm run typecheck
+
+      - name: Build web bundle
+        working-directory: app
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        working-directory: app
+        run: npx cap sync android
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -23,50 +46,54 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
+      - name: Ensure Android SDK packages
         run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+          SDKMANAGER="$(ls -1 "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -n1)"
+          echo "Using $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
 
       - name: Build debug APK
-        working-directory: android
+        working-directory: app/android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Collect APK
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk StockifyPro-debug.apk
-          ls -lh StockifyPro-debug.apk
+          cp app/android/app/build/outputs/apk/debug/app-debug.apk StockifyPro-android.apk
+          ls -lh StockifyPro-android.apk
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: StockifyPro-debug
-          path: StockifyPro-debug.apk
+          name: StockifyPro-android
+          path: StockifyPro-android.apk
           if-no-files-found: error
+          retention-days: 90
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           name: Stockify Pro ${{ github.ref_name }}
-          files: StockifyPro-debug.apk
+          files: StockifyPro-android.apk
           generate_release_notes: true
           body: |
-            Installable Android build of Stockify Pro.
+            ### Stockify Pro — Nifty 50 day-trading desk (paper only)
 
-            **Install**
-            1. Download `StockifyPro-debug.apk` below on your Android phone.
-            2. Open the file and allow "Install unknown apps" when prompted.
-            3. Launch Stockify Pro — it runs on a built-in demo market feed.
+            **Install on Android**
+            1. Download `StockifyPro-android.apk` below.
+            2. Open it and allow "Install unknown apps" when Android asks.
+            3. Launch Stockify Pro. It boots on the bundled real NSE snapshot
+               (17 Nov 2026, 5-minute bars + 90 daily bars for all 50 names).
 
-            **Use the live backend (optional)**
-            Start `backend/` (`npm install && npm start`), then tap the status
-            chip in the app and enter the server URL (e.g. `http://192.168.1.20:3001`
-            on your local network).
+            **Live ticker (optional)**
+            Run `backend/` (`npm install && npm start`) and point
+            **Settings → Server URL** at it. The proxy streams real Yahoo
+            Finance quotes for the same 50 tickers; no prices are simulated.
 
-            Simulated market data only — not investment advice.
+            **No account, no broker, no money.** Every fill is paper and stays
+            on the device. Education and tooling, not investment advice.
+
+            Web build: https://wencateisch.github.io/stockify-pro/

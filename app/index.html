@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#05070d" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Stockify Pro" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="description"
+      content="Stockify Pro: a Nifty 50 day-trading desk. Scan five setups, time the opening-range breakout, replay 10,000 sessions, size in rupees and pass the risk gate before any paper order."
+    />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./icon-180.png" />
+    <title>Stockify Pro — NSE Day Trader</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #05070d;
+        color: #eef2ff;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable",
+          "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        gap: 18px;
+        background:
+          radial-gradient(70% 50% at 20% 10%, rgba(52, 211, 153, 0.16), transparent 70%),
+          radial-gradient(60% 50% at 85% 20%, rgba(96, 132, 255, 0.2), transparent 70%),
+          #05070d;
+        z-index: 10;
+        transition: opacity 0.35s ease;
+      }
+      #boot .mark {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        animation: bootPulse 1.6s ease-in-out infinite;
+      }
+      #boot .label {
+        font-size: 13px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(238, 242, 255, 0.5);
+      }
+      @keyframes bootPulse {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+        50% {
+          transform: translateY(-4px) scale(1.02);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="boot">
+      <div class="mark">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+          <path d="M5 24.5L12.5 16.5L18.5 21L29 8.5" stroke="#6ee7b7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M23.5 8.5H29V14" stroke="#6ee7b7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M5 29H29" stroke="rgba(255,255,255,0.28)" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div class="label">Stockify Pro</div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

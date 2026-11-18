@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Stockify Pro</string>
+    <string name="title_activity_main">Stockify Pro</string>
+    <string name="package_name">pro.stockify.daytrader</string>
+    <string name="custom_url_scheme">pro.stockify.daytrader</string>
+</resources>

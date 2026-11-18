@@ -3,22 +3,42 @@ node_modules/
 .pnp/
 .pnp.js
 
-# Build output
-web/build/
-android/build/
-android/app/build/
-android/.gradle/
-android/local.properties
-*.apk
-*.aab
+# Web build output
+app/dist/
+app/dev-dist/
 
-# Gradle / IDEA / Android Studio
+# Capacitor generated web assets (recreated by `npx cap sync`)
+app/android/app/src/main/assets/public/
+app/android/app/src/main/assets/capacitor.config.json
+app/android/app/src/main/assets/capacitor.plugins.json
+app/ios/App/App/public/
+app/ios/App/App/capacitor.config.json
+
+# Gradle / Android Studio
+app/android/.gradle/
+app/android/build/
+app/android/app/build/
+app/android/local.properties
+app/android/capacitor-cordova-android-plugins/build/
 .gradle/
 .idea/
 *.iml
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Xcode / CocoaPods
+app/ios/App/Pods/
+app/ios/App/build/
+app/ios/App/App.xcworkspace/xcuserdata/
+app/ios/App/App.xcodeproj/xcuserdata/
+app/ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+
+# Packages
+*.apk
+*.aab
+*.ipa
 
 # Env & secrets
 .env
